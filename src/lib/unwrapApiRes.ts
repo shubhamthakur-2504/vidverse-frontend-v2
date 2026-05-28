@@ -1,16 +1,21 @@
 import { ApiSuccess, ApiError } from './types/apiType'
 
 export function unwrapApiResponse<T>(
-  json: ApiSuccess<T> | ApiError
+  json: ApiSuccess<T> | ApiError | any
 ): T {
-  if (!json.success) {
-    const error = new Error(json.message) as Error & {
-      statusCode?: number
-    }
-
-    error.statusCode = json.statusCode
+  if (!json || typeof json !== 'object' || !('success' in json)) {
+    const error = new Error('Invalid API response') as Error & { statusCode?: number }
     throw error
   }
 
-  return json.data
+  const resp = json as ApiSuccess<T> | ApiError
+
+  if (!resp.success) {
+    const message = (resp as ApiError).message || 'Unknown API error'
+    const error = new Error(message) as Error & { statusCode?: number }
+    if ((resp as ApiError).statusCode) error.statusCode = (resp as ApiError).statusCode
+    throw error
+  }
+
+  return (resp as ApiSuccess<T>).data
 }

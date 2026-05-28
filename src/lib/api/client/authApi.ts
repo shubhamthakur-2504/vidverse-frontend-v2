@@ -1,5 +1,5 @@
 "use client";
-import apiClient from "./apiClient";
+import apiClient, { noAuthRedirectClient } from "./apiClient";
 import { Login, ChangePassword, ChangeFiles, ChangeUserInfo } from "@/lib/types/authType";
 
 const authApi = {
@@ -39,11 +39,11 @@ const authApi = {
     },
 
     getWatchHistory: () => {
-        return apiClient.get("/user/watchhistory");
+        return apiClient.get("/user/getwatchhistory");
     },
 
     getCurrentUser: () => {
-        return apiClient.get("/user/currentuser");
+        return noAuthRedirectClient.get("/user/getcurrentuser");
     }
 };
 

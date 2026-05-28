@@ -17,6 +17,12 @@ const plainAxios: AxiosInstance = axios.create({
     withCredentials: false,
 })
 
+export const noAuthRedirectClient: AxiosInstance = axios.create({
+    baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
+    timeout: 120000,
+    withCredentials: true,
+})
+
 let isRefreshing = false
 
 type FailedRequestQueueItem = {
