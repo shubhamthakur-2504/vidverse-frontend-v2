@@ -26,37 +26,39 @@ export function VideoInfo({ video }: VideoInfoProps) {
   const [isLoading, setIsLoading] = useState(false)
 
   useEffect(() => {
-    fetchVideoStats()
-  }, [video._id, user])
-
-  const fetchVideoStats = async () => {
-    try {
-      // Fetch subscription status
-      const subStatus = await subscriptionApi.status(video.owner._id)
-      setIsSubscribed(subStatus.data.data.isSubscribed)
-
+    const fetchVideoStats = async () => {
+      try {
       // Fetch subscriber count
-      const subCount = await subscriptionApi.count(video.owner._id)
-      setSubscriberCount(subCount.data.data.count)
+        const subCount = await subscriptionApi.count(video.owner._id)
+        setSubscriberCount(subCount.data.data.count)
 
-      // Fetch like status and count
-      if (user) {
-        const likeStatusRes = await reactionApi.status(video._id, 'Video')
-        setLikeStatus(
-          likeStatusRes.data.data.isLiked 
-            ? 'liked' 
-            : likeStatusRes.data.data.isDisliked 
-            ? 'disliked' 
-            : null
-        )
+        // Fetch like status and count
+        if (user) {
+          const subStatus = await subscriptionApi.status(video.owner._id)
+          setIsSubscribed(subStatus.data.data.isSubscribed)
+
+          const likeStatusRes = await reactionApi.status(video._id, 'Video')
+          setLikeStatus(
+            likeStatusRes.data.data.isLiked 
+              ? 'liked' 
+              : likeStatusRes.data.data.isDisliked 
+              ? 'disliked' 
+              : null
+          )
+        } else {
+          setIsSubscribed(false)
+          setLikeStatus(null)
+        }
+
+        const likeCountRes = await reactionApi.countLikes(video._id, 'Video')
+        setLikeCount(likeCountRes.data.data.likesCount)
+      } catch {
+        console.error('Error fetching video stats:')
       }
-
-      const likeCountRes = await reactionApi.countLikes(video._id, 'Video')
-      setLikeCount(likeCountRes.data.data.likesCount)
-    } catch (error) {
-      console.error('Error fetching video stats:', error)
     }
-  }
+
+    fetchVideoStats()
+  }, [video._id, video.owner._id, user])
 
   const handleSubscribe = async () => {
     if (!user) {
@@ -79,7 +81,7 @@ export function VideoInfo({ video }: VideoInfoProps) {
         setSubscriberCount(prev => prev + 1)
         toast.success('Subscribed successfully')
       }
-    } catch (error) {
+    } catch {
       toast.error('Error', {
         description: 'Failed to update subscription'
       })
@@ -107,7 +109,7 @@ export function VideoInfo({ video }: VideoInfoProps) {
         setLikeStatus('liked')
         setLikeCount(prev => prev + 1)
       }
-    } catch (error) {
+    } catch {
       toast.error('Error', {
         description: 'Failed to update like'
       })
@@ -131,7 +133,7 @@ export function VideoInfo({ video }: VideoInfoProps) {
         if (likeStatus === 'liked') setLikeCount(prev => prev - 1)
         setLikeStatus('disliked')
       }
-    } catch (error) {
+    } catch {
       toast.error('Error', {
         description: 'Failed to update dislike'
       })
@@ -144,7 +146,7 @@ export function VideoInfo({ video }: VideoInfoProps) {
         title: video.title,
         url: window.location.href
       })
-    } catch (error) {
+    } catch {
       // Fallback: copy to clipboard
       navigator.clipboard.writeText(window.location.href)
       toast.success('Link copied to clipboard')

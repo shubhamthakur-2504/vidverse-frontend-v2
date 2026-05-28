@@ -8,13 +8,17 @@ import { videoApi } from '@/lib/api/server/videoApi'
 import { unwrapApiResponse } from '@/lib/unwrapApiRes'
 import { Video } from '@/lib/types/videoType'
 
-export default async function WatchPage({ params }: { params: { videoId: string } }) {
+export default async function WatchPage({ params }: { params: any }) {
+  // `params` can be a Promise in some Next.js internals — resolve safely
+  const resolvedParams = await Promise.resolve(params)
+  const videoId: string = resolvedParams.videoId
+
   let videoData = null
   try {
-    const res = await videoApi.getVideoDetails(params.videoId)
+    const res = await videoApi.getVideoDetails(videoId)
     videoData = unwrapApiResponse<Video>(res)
-  } catch (error) {
-    console.error('Failed to fetch video details.', error)
+  } catch (error: any) {
+    console.error('Failed to fetch video details.', error?.message || error)
   }
 
   if (videoData == null) {
@@ -47,12 +51,12 @@ export default async function WatchPage({ params }: { params: { videoId: string 
             <VideoInfo video={videoData} />
 
             {/* Comments Section */}
-            <CommentSection targetId={params.videoId} targetType="Video" />
+            <CommentSection targetId={videoId} targetType="Video" />
           </div>
 
           {/* Sidebar - Related Videos */}
           <div className="lg:col-span-1">
-            <RelatedVideos currentVideoId={params.videoId} />
+            <RelatedVideos currentVideoId={videoId} />
           </div>
         </div>
       </div>
