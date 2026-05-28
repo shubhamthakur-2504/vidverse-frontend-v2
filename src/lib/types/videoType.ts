@@ -21,4 +21,22 @@ type EditPlayListPayload = {
   videoId: string;
 }
 
+export interface Video {
+  _id: string
+  title: string
+  thumbnailUrl: string
+  videoFileUrl: string
+  description: string
+  duration: number
+  views: number
+  createdAt: string
+  owner: {
+    _id: string
+    userName: string
+    fullName: string
+    avatarUrl: string
+  }
+}
+
+
 export type { UploadVideoPayload, UpdateVideoPayload, PlayListPayload, EditPlayListPayload };

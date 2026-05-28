@@ -1,16 +1,16 @@
 import apiClient from "./apiClient";
 
 const commentApi = {
-    post: (videoId: string, content: string) => {
-        return apiClient.post(`/videos/createcomment/${videoId}`, { content });
+    post: (targetId: string, content: string, targetType: "Video" | "Tweet") => {
+        return apiClient.post(`/${targetType}/createcomment/${targetId}`, { content });
     },
 
-    delete: (commentId: string) => {
-        return apiClient.delete(`/videos/deletecomment/${commentId}`);
+    delete: (commentId: string, targetType: "Video" | "Tweet") => {
+        return apiClient.delete(`/${targetType}/deletecomment/${commentId}`);
     },
 
-    edit: (commentId: string, content: string) => {
-        return apiClient.patch(`/videos/editcomment/${commentId}`, { content });
+    edit: (commentId: string, content: string, targetType: "Video" | "Tweet") => {
+        return apiClient.patch(`/${targetType}/editcomment/${commentId}`, { content });
     },
 }
 
