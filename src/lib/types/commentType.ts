@@ -1,10 +1,16 @@
 export interface Comment {
     _id: string;
     content: string;
-    userName: string;
-    avatarUrl: string;
-    createdAt: string;
+    userId?: string;
+    userName?: string;
+    avatarUrl?: string;
+    createdAt?: string;
     editStatus: boolean;
+    relativeTime?: string;
+    userDetails?: {
+        userName?: string;
+        avatarUrl?: string;
+    };
     owner?: {
         _id: string;
     };

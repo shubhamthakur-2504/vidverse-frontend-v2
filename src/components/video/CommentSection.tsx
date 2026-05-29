@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, ChangeEvent } from 'react'
+import { useState, useEffect, useCallback, ChangeEvent } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
@@ -14,7 +14,6 @@ import reactionApi from '@/lib/api/client/reactionApi'
 import { Comment } from '@/lib/types/commentType'
 import { unwrapApiResponse } from '@/lib/unwrapApiRes'
 import { toast } from 'sonner'
-import { ApiError } from '@/lib/types/apiType'
 
 export function CommentSection({ targetId, targetType }: { targetId: string, targetType: "Video" | "Tweet" }) {
   const { user } = useAuth()
@@ -25,36 +24,37 @@ export function CommentSection({ targetId, targetType }: { targetId: string, tar
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editContent, setEditContent] = useState('')
 
-  useEffect(() => {
-    fetchComments()
-  }, [targetId])
-
-  const fetchComments = async () => {
+  const fetchComments = useCallback(async () => {
     setIsLoading(true)
     try {
       const response = await readComment.all(targetId, targetType)
       const data = unwrapApiResponse<Comment[]>(response)
       if (user != null && Array.isArray(data)) {
-        for (let comment of data) {
+        for (const comment of data) {
           try {
             const res = await reactionApi.status(comment._id, 'Comment')
             const status = unwrapApiResponse<{ isLiked?: boolean; isDisliked?: boolean }>(res.data)
             comment.isLiked = !!status.isLiked
             comment.isDisliked = !!status.isDisliked
-          } catch (error) {
+          } catch {
             // Ignore reaction fetch errors
           }
         }
       }
       setComments(data || [])
-    } catch (error: ApiError | any) {
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Failed to load comments'
       toast.error('Error', {
-        description: error.message || 'Failed to load comments'
+        description: message
       })
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [targetId, targetType, user])
+
+  useEffect(() => {
+    fetchComments()
+  }, [fetchComments])
 
   const handleSubmitComment = async () => {
     if (!user) {
@@ -72,7 +72,7 @@ export function CommentSection({ targetId, targetType }: { targetId: string, tar
       setNewComment('')
       await fetchComments() 
       toast.success('Comment posted successfully')
-    } catch (error) {
+    } catch {
       toast.error('Error', {
         description: 'Failed to post comment'
       })
@@ -86,7 +86,7 @@ export function CommentSection({ targetId, targetType }: { targetId: string, tar
       await commentApi.delete(commentId, targetType)
       await fetchComments() // Reload comments
       toast.success('Comment deleted successfully')
-    } catch (error) {
+    } catch {
       toast.error('Error', {
         description: 'Failed to delete comment'
       })
@@ -102,7 +102,7 @@ export function CommentSection({ targetId, targetType }: { targetId: string, tar
       setEditContent('')
       await fetchComments()
       toast.success('Comment updated successfully')
-    } catch (error) {
+    } catch {
       toast.error('Error', {
         description: 'Failed to update comment'
       })
@@ -125,7 +125,7 @@ export function CommentSection({ targetId, targetType }: { targetId: string, tar
         await reactionApi.addReaction(commentId, isLike, 'Comment')
       }
       await fetchComments()
-    } catch (error) {
+    } catch {
       toast.error('Error', {
         description: 'Failed to update reaction'
       })
@@ -145,49 +145,54 @@ export function CommentSection({ targetId, targetType }: { targetId: string, tar
       </h2>
 
       {/* Add Comment */}
-      {user && (
-        <div className="flex gap-4">
-          <Avatar className="h-10 w-10 ring-2 ring-blue-500/50">
-            <AvatarImage src={user.avatarUrl} alt={user.userName} />
-            <AvatarFallback className="bg-linear-to-br from-blue-500 to-purple-500">
-              {user.userName.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+      <div className="flex gap-4">
+        <Avatar className="h-10 w-10 ring-2 ring-blue-500/50">
+          <AvatarImage src={user?.avatarUrl} alt={user?.userName || 'Guest'} />
+          <AvatarFallback className="bg-linear-to-br from-blue-500 to-purple-500">
+            {user ? user.userName.charAt(0).toUpperCase() : 'G'}
+          </AvatarFallback>
+        </Avatar>
 
-          <div className="flex-1 space-y-3">
-            <Textarea
-              value={newComment}
-              onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setNewComment(e.target.value)}
-              placeholder="Add a comment..."
-              className="glass border-white/10 focus-visible:ring-blue-500/50 resize-none min-h-20"
-            />
-            
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="ghost"
-                onClick={() => setNewComment('')}
-                disabled={!newComment.trim() || isSubmitting}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSubmitComment}
-                disabled={!newComment.trim() || isSubmitting}
-                className="bg-linear-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
-              >
-                {isSubmitting ? (
-                  'Posting...'
-                ) : (
-                  <>
-                    <Send className="h-4 w-4 mr-2" />
-                    Comment
-                  </>
-                )}
-              </Button>
-            </div>
+        <div className="flex-1 space-y-3">
+          <Textarea
+            value={newComment}
+            onChange={(e: ChangeEvent<HTMLTextAreaElement>) => setNewComment(e.target.value)}
+            placeholder={user ? 'Share your thoughts...' : 'Login to comment'}
+            disabled={!user}
+            className="glass border-white/10 focus-visible:ring-blue-500/50 resize-none min-h-20 disabled:cursor-not-allowed disabled:opacity-60"
+          />
+
+          {!user && (
+            <p className="text-sm text-muted-foreground">
+              Sign in to share your thoughts and join the conversation.
+            </p>
+          )}
+          
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="ghost"
+              onClick={() => setNewComment('')}
+              disabled={!user || !newComment.trim() || isSubmitting}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSubmitComment}
+              disabled={!user || !newComment.trim() || isSubmitting}
+              className="bg-linear-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
+            >
+              {isSubmitting ? (
+                'Posting...'
+              ) : (
+                <>
+                  <Send className="h-4 w-4 mr-2" />
+                  Comment
+                </>
+              )}
+            </Button>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Comments List */}
       <div className="space-y-4">
@@ -219,23 +224,31 @@ export function CommentSection({ targetId, targetType }: { targetId: string, tar
                 transition={{ delay: index * 0.05 }}
                 className="flex gap-4 group"
               >
+                {(() => {
+                  const commenterName = comment.userName ?? comment.userDetails?.userName ?? 'Unknown user'
+                  const commenterAvatar = comment.avatarUrl ?? comment.userDetails?.avatarUrl ?? ''
+                  const commenterTime = comment.relativeTime ?? (comment.createdAt ? formatTimeAgo(comment.createdAt) : 'just now')
+                  const canManageComment = Boolean(user && comment.userId && user._id === comment.userId)
+
+                  return (
+                    <>
                 <Avatar className="h-10 w-10">
-                  <AvatarImage src={comment.avatarUrl} alt={comment.userName} />
+                  <AvatarImage src={commenterAvatar} alt={commenterName} />
                   <AvatarFallback className="bg-linear-to-br from-blue-500 to-purple-500">
-                    {comment.userName.charAt(0).toUpperCase()}
+                    {commenterName.charAt(0).toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
 
                 <div className="flex-1 space-y-2">
                   {/* Header */}
                   <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-semibold">{comment.userName}</span>
+                    <span className="font-semibold">{commenterName}</span>
                     <span className="text-sm text-muted-foreground">
-                      @{comment.userName}
+                      {commenterName}
                     </span>
                     <span className="text-sm text-muted-foreground">•</span>
                     <span className="text-sm text-muted-foreground">
-                      {formatTimeAgo(comment.createdAt)}
+                      {commenterTime}
                     </span>
                   </div>
 
@@ -306,7 +319,7 @@ export function CommentSection({ targetId, targetType }: { targetId: string, tar
                     </div>
 
                     {/* Edit/Delete (only for comment owner) */}
-                    {user?._id === comment.owner?._id && (
+                    {canManageComment && (
                       <>
                         <Button
                           variant="ghost"
@@ -331,6 +344,9 @@ export function CommentSection({ targetId, targetType }: { targetId: string, tar
                     )}
                   </div>
                 </div>
+                    </>
+                  )
+                })()}
               </motion.div>
             ))}
           </AnimatePresence>
