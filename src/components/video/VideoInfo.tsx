@@ -182,6 +182,9 @@ export function VideoInfo({ video }: VideoInfoProps) {
               </h3>
             </Link>
             <p className="text-sm text-muted-foreground">
+              {video.owner.userName}
+            </p>
+            <p className="text-sm text-muted-foreground">
               {formatViews(subscriberCount)} subscribers
             </p>
           </div>

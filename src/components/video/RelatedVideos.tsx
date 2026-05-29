@@ -3,49 +3,34 @@
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { useCallback } from 'react'
 import { formatViews, formatTimeAgo, formatDuration } from '@/lib/utils'
 import { motion } from 'framer-motion'
-import { Video } from 'lucide-react'
-
-interface RelatedVideo {
-  _id: string
-  title: string
-  thumbnail: string
-  duration: number
-  views: number
-  createdAt: string
-  owner: {
-    _id: string
-    username: string
-    fullName: string
-    avatar: string
-  }
-}
+import { Video as VideoIcon } from 'lucide-react'
+import videoApi from '@/lib/api/client/videoApi'
+import { Video } from '@/lib/types/videoType'
 
 export function RelatedVideos({ currentVideoId }: { currentVideoId: string }) {
-  const [videos, setVideos] = useState<RelatedVideo[]>([])
+  const [videos, setVideos] = useState<Video[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    fetchRelatedVideos()
-  }, [currentVideoId])
-
-  const fetchRelatedVideos = async () => {
+  const fetchRelatedVideos = useCallback(async () => {
     setIsLoading(true)
     try {
-      // TODO: Replace with actual API call for related videos
-      // const response = await videoApi.getRelated(currentVideoId)
-      // setVideos(response.data.data)
-      
-      // Mock data for now
-      setVideos([])
+      const res = await videoApi.getAll()
+      const allVideos: Video[] = res.data?.data || []
+      const related = allVideos.filter(v => v._id !== currentVideoId).slice(0, 12)
+      setVideos(related)
     } catch (error) {
       console.error('Error fetching related videos:', error)
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [currentVideoId])
+
+  useEffect(() => {
+    fetchRelatedVideos()
+  }, [fetchRelatedVideos])
 
   if (isLoading) {
     return (
@@ -69,7 +54,7 @@ export function RelatedVideos({ currentVideoId }: { currentVideoId: string }) {
     return (
       <div className="glass rounded-xl p-8 text-center space-y-4">
         <div className="glass rounded-full p-6 inline-block">
-          <Video className="h-12 w-12 text-muted-foreground" />
+          <VideoIcon className="h-12 w-12 text-muted-foreground" />
         </div>
         <p className="text-muted-foreground">No related videos found</p>
       </div>
@@ -95,7 +80,7 @@ export function RelatedVideos({ currentVideoId }: { currentVideoId: string }) {
                 {/* Thumbnail */}
                 <div className="relative w-40 aspect-video rounded-lg overflow-hidden glass flex-shrink-0">
                   <Image
-                    src={video.thumbnail}
+                    src={video.thumbnailUrl}
                     alt={video.title}
                     fill
                     className="object-cover group-hover:scale-110 transition-transform duration-300"

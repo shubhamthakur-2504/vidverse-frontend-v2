@@ -8,7 +8,11 @@ import { videoApi } from '@/lib/api/server/videoApi'
 import { unwrapApiResponse } from '@/lib/unwrapApiRes'
 import { Video } from '@/lib/types/videoType'
 
-export default async function WatchPage({ params }: { params: any }) {
+type WatchPageParams = {
+  params: { videoId: string } | Promise<{ videoId: string }>
+}
+
+export default async function WatchPage({ params }: WatchPageParams) {
   // `params` can be a Promise in some Next.js internals — resolve safely
   const resolvedParams = await Promise.resolve(params)
   const videoId: string = resolvedParams.videoId
@@ -17,8 +21,8 @@ export default async function WatchPage({ params }: { params: any }) {
   try {
     const res = await videoApi.getVideoDetails(videoId)
     videoData = unwrapApiResponse<Video>(res)
-  } catch (error: any) {
-    console.error('Failed to fetch video details.', error?.message || error)
+  } catch (error: unknown) {
+    console.error('Failed to fetch video details.', error instanceof Error ? error.message : error)
   }
 
   if (videoData == null) {

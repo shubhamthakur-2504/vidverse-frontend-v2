@@ -22,6 +22,10 @@ const videoApi = {
         return apiClient.get("/videos/myvideos");
     },
 
+    getAll: () => {
+        return apiClient.get("/videos/getallvideos");
+    },
+
 };
 
 export default videoApi;

@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from 'react'
 import Hls from 'hls.js'
 import {  Play,  Pause,  Volume2,  VolumeX,  Maximize,  Settings, SkipForward, SkipBack, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { cn } from '@/lib/utils'
 import { Slider } from '@/components/ui/slider'
 
 interface VideoPlayerProps {
@@ -26,14 +25,19 @@ export function VideoPlayer({ videoUrl, thumbnail }: VideoPlayerProps) {
   const [showControls, setShowControls] = useState(true)
   const [isLoading, setIsLoading] = useState(true)
   const [buffered, setBuffered] = useState(0)
+  const [loadError, setLoadError] = useState<string | null>(null)
 
   // Initialize HLS
   useEffect(() => {
     if (!videoRef.current) return
 
     const video = videoRef.current
+    const isHlsSource = /\.m3u8($|\?)/i.test(videoUrl)
 
-    if (Hls.isSupported()) {
+    video.removeAttribute('src')
+    video.load()
+
+    if (Hls.isSupported() && isHlsSource) {
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
@@ -52,11 +56,12 @@ export function VideoPlayer({ videoUrl, thumbnail }: VideoPlayerProps) {
         if (data.fatal) {
           console.error('HLS Error:', data)
           setIsLoading(false)
+          setLoadError('Video stream failed to load')
         }
       })
-    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+    } else {
       video.src = videoUrl
-      setIsLoading(false)
+      video.load()
     }
 
     return () => {
@@ -72,6 +77,7 @@ export function VideoPlayer({ videoUrl, thumbnail }: VideoPlayerProps) {
     if (!video) return
 
     const updateProgress = () => {
+      setIsLoading(false)
       setCurrentTime(video.currentTime)
       setDuration(video.duration || 0)
       
@@ -95,6 +101,7 @@ export function VideoPlayer({ videoUrl, thumbnail }: VideoPlayerProps) {
   // Hide controls on inactivity
   useEffect(() => {
     let timeout: NodeJS.Timeout
+    const container = containerRef.current
 
     const handleMouseMove = () => {
       setShowControls(true)
@@ -104,11 +111,11 @@ export function VideoPlayer({ videoUrl, thumbnail }: VideoPlayerProps) {
       }
     }
 
-    containerRef.current?.addEventListener('mousemove', handleMouseMove)
+    container?.addEventListener('mousemove', handleMouseMove)
     
     return () => {
       clearTimeout(timeout)
-      containerRef.current?.removeEventListener('mousemove', handleMouseMove)
+      container?.removeEventListener('mousemove', handleMouseMove)
     }
   }, [isPlaying])
 
@@ -181,10 +188,25 @@ export function VideoPlayer({ videoUrl, thumbnail }: VideoPlayerProps) {
         className="w-full h-full object-contain bg-black"
         poster={thumbnail}
         onClick={togglePlay}
+        onError={() => {
+          setIsLoading(false)
+          setLoadError('Video could not be loaded')
+        }}
       />
 
       {/* Loading Spinner */}
       <AnimatePresence>
+        {loadError && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="absolute inset-0 flex items-center justify-center bg-black/70 backdrop-blur-sm text-center px-6"
+          >
+            <p className="text-sm text-white/90">{loadError}</p>
+          </motion.div>
+        )}
+
         {isLoading && (
           <motion.div
             initial={{ opacity: 0 }}
