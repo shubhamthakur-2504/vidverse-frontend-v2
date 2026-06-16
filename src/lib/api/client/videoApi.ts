@@ -19,7 +19,7 @@ const videoApi = {
     },
 
     getMine: () => {
-        return apiClient.get("/videos/myvideos");
+        return apiClient.get("/videos/getmyvideos");
     },
 
     getAll: () => {

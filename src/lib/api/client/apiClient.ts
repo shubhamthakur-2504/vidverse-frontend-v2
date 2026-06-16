@@ -50,8 +50,9 @@ apiClient.interceptors.response.use(
         }
 
         const isRefreshRequest = originalRequest.url?.includes("/user/refreshaccess")
+        const isAuthRequest = originalRequest.url?.includes("/user/login") || originalRequest.url?.includes("/user/register")
 
-        if (error.response?.status === 401 && !originalRequest._retry && !isRefreshRequest) {
+        if (error.response?.status === 401 && !originalRequest._retry && !isRefreshRequest && !isAuthRequest) {
             originalRequest._retry = true
             if (isRefreshing) {
                 return new Promise((resolve, reject) => {
