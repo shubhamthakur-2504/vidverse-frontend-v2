@@ -6,7 +6,7 @@ const videoApi = {
         return apiClient.post("/videos/upload", data);
     },
 
-    update: (data: UpdateVideoPayload, videoId: string) => {
+    update: (data: UpdateVideoPayload | FormData, videoId: string) => {
         return apiClient.patch(`/videos/update/${videoId}`, data);
     },
 

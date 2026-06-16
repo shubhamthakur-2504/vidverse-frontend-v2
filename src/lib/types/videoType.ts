@@ -29,7 +29,9 @@ export interface Video {
   description: string
   duration: number
   views: number
+  isPublished?: boolean
   status?: 'processing' | 'ready' | 'failed'
+  category?: string
   createdAt: string
   owner: {
     _id: string

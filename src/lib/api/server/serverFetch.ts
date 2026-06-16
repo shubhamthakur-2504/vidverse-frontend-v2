@@ -1,3 +1,5 @@
+import { cookies } from 'next/headers'
+
 const BASE_URL = process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL;
 
 export async function serverFetch<T>(path: string): Promise<T> {
@@ -11,9 +13,11 @@ export async function serverFetch<T>(path: string): Promise<T> {
     )
   }
 
+  const cookieHeader = (await cookies()).toString()
   const res = await fetch(`${BASE_URL}${path}`, {
-    cache: "no-store",
-    credentials: "include",
+    cache: 'no-store',
+    credentials: 'include',
+    headers: cookieHeader ? { cookie: cookieHeader } : undefined,
   });
 
   if (!res.ok && res.status >= 500) {

@@ -1,6 +1,6 @@
 "use client";
 import apiClient, { noAuthRedirectClient } from "./apiClient";
-import { Login, ChangePassword, ChangeFiles, ChangeUserInfo } from "@/lib/types/authType";
+import { Login, ChangePassword, ChangeUserInfo } from "@/lib/types/authType";
 
 const authApi = {
     login: (data: Login) => {
@@ -22,11 +22,11 @@ const authApi = {
         return apiClient.patch("/user/changepassword", data);
     },
 
-    changeAvatar: (data: ChangeFiles) => {
+    changeAvatar: (data: FormData) => {
         return apiClient.patch("/user/changeavatar", data);
     },
 
-    changeCover: (data: ChangeFiles) => {
+    changeCover: (data: FormData) => {
         return apiClient.patch("/user/changecover", data);
     },
 
