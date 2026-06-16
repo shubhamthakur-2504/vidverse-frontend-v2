@@ -10,15 +10,19 @@ const commentApi = {
     },
 
     post: (targetId: string, content: string, targetType: "Video" | "Tweet") => {
-        return apiClient.post(`/${targetType}/createcomment/${targetId}`, { content });
+        const prefix = targetType === "Video" ? "videos" : "tweets";
+        return apiClient.post(`/${prefix}/createcomment/${targetId}`, { content });
     },
 
     delete: (commentId: string, targetType: "Video" | "Tweet") => {
-        return apiClient.delete(`/${targetType}/deletecomment/${commentId}`);
+        const prefix = targetType === "Video" ? "videos" : "tweets";
+        return apiClient.delete(`/${prefix}/deletecomment/${commentId}`);
     },
 
     edit: (commentId: string, content: string, targetType: "Video" | "Tweet") => {
-        return apiClient.patch(`/${targetType}/editcomment/${commentId}`, { content });
+        const prefix = targetType === "Video" ? "videos" : "tweets";
+        const routeSuffix = targetType === "Video" ? "editcomment" : "updatecomment";
+        return apiClient.patch(`/${prefix}/${routeSuffix}/${commentId}`, { content });
     },
 }
 
