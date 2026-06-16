@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "../styles/globals.css";
 import { AuthProvider } from '@/components/auth/AuthProvider'
 import { Navbar } from '@/components/layout/Navbar'
@@ -15,6 +15,13 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  weight: ['300', '400', '500', '600', '700', '800', '900'],
+  display: 'swap',
+});
+
 export const metadata: Metadata = {
   title: 'VidVerse - Share Your Story',
   description: 'A modern video streaming platform built with Next.js',
@@ -28,7 +35,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} antialiased font-sans`}
       >
         <AuthProvider>
           <Navbar />
