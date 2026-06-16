@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, Suspense } from 'react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { motion } from 'framer-motion'
@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { user, loading, login } = useAuth()
@@ -147,5 +147,17 @@ export default function LoginPage() {
         </motion.div>
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen pt-16 flex items-center justify-center px-4 relative overflow-hidden bg-[#0a0a0f]">
+        <div className="text-white/50 text-sm animate-pulse">Loading login details...</div>
+      </div>
+    }>
+      <LoginForm />
+    </Suspense>
   )
 }

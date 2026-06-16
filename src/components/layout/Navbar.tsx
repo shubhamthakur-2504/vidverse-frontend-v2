@@ -33,16 +33,21 @@ export function Navbar() {
     }
   }
 
+  useEffect(() => {
+    const handleScroll = () => setIsScrolled(window.scrollY > 10)
+    window.addEventListener('scroll', handleScroll, { passive: true })
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
   return (
     <motion.nav
       initial={{ y: -80, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
           ? 'bg-[#0a0a0f]/90 backdrop-blur-2xl border-b border-white/[0.06] shadow-xl shadow-black/30'
           : 'bg-transparent'
-      }`}
+        }`}
     >
       <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
 
@@ -67,14 +72,12 @@ export function Navbar() {
           animate={{ scale: isSearchFocused ? 1.01 : 1 }}
           transition={{ duration: 0.2 }}
         >
-          <form onSubmit={handleSearchSubmit} className={`relative transition-all duration-300 ${
-            isSearchFocused
+          <form onSubmit={handleSearchSubmit} className={`relative transition-all duration-300 ${isSearchFocused
               ? 'ring-1 ring-violet-500/60 rounded-full shadow-lg shadow-violet-500/10'
               : ''
-          }`}>
-            <Search className={`absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors duration-200 ${
-              isSearchFocused ? 'text-violet-400' : 'text-white/30'
-            }`} />
+            }`}>
+            <Search className={`absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors duration-200 ${isSearchFocused ? 'text-violet-400' : 'text-white/30'
+              }`} />
             <input
               ref={searchRef}
               type="text"
@@ -223,9 +226,9 @@ export function Navbar() {
               <Link href="/auth/register">
                 <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                   <Button
-                    className="h-9 px-5 text-sm font-semibold rounded-full btn-gradient text-white border-0 shadow-lg shadow-violet-500/25"
+                    className="h-9 px-5 text-sm font-semibold rounded-full btn-gradient text-white hover:text-white border-0 shadow-lg shadow-violet-500/25"
                   >
-                    Sign Up
+                    <span>Sign Up</span>
                   </Button>
                 </motion.div>
               </Link>

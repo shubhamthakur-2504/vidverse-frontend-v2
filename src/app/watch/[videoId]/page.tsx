@@ -42,7 +42,7 @@ export default async function WatchPage({ params }: WatchPageParams) {
             className="inline-flex items-center gap-2 mt-4 px-6 py-2.5 rounded-full btn-gradient text-white text-sm font-semibold"
           >
             <Home className="h-4 w-4" />
-            Back to Home
+            <span>Back to Home</span>
           </Link>
         </div>
       </div>
