@@ -4,14 +4,15 @@ import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { ThumbsUp, ThumbsDown, Share2, MoreVertical } from 'lucide-react'
+import { ThumbsUp, ThumbsDown, Share2, MoreHorizontal, Bell, ChevronDown, ChevronUp, Eye, Calendar } from 'lucide-react'
 import { formatViews, formatTimeAgo } from '@/lib/utils'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/components/auth/AuthProvider'
 import reactionApi from '@/lib/api/client/reactionApi'
 import subscriptionApi from '@/lib/api/client/subscriptionApi'
 import { toast } from 'sonner'
 import { Video } from '@/lib/types/videoType'
+
 interface VideoInfoProps {
   video: Video
 }
@@ -23,133 +24,98 @@ export function VideoInfo({ video }: VideoInfoProps) {
   const [subscriberCount, setSubscriberCount] = useState(0)
   const [likeStatus, setLikeStatus] = useState<'liked' | 'disliked' | null>(null)
   const [likeCount, setLikeCount] = useState(0)
-  const [isLoading, setIsLoading] = useState(false)
+  const [isSubLoading, setIsSubLoading] = useState(false)
 
   useEffect(() => {
     const fetchVideoStats = async () => {
       try {
-      // Fetch subscriber count
         const subCount = await subscriptionApi.count(video.owner._id)
         setSubscriberCount(subCount.data.data.count)
 
-        // Fetch like status and count
+        const likeCountRes = await reactionApi.countLikes(video._id, 'Video')
+        setLikeCount(likeCountRes.data.data.likesCount)
+
         if (user) {
           const subStatus = await subscriptionApi.status(video.owner._id)
           setIsSubscribed(subStatus.data.data.isSubscribed)
 
           const likeStatusRes = await reactionApi.status(video._id, 'Video')
+          const status = likeStatusRes.data.data.status
           setLikeStatus(
-            likeStatusRes.data.data.isLiked 
-              ? 'liked' 
-              : likeStatusRes.data.data.isDisliked 
-              ? 'disliked' 
-              : null
+            status === 'like' ? 'liked'
+              : status === 'dislike' ? 'disliked'
+                : null
           )
-        } else {
-          setIsSubscribed(false)
-          setLikeStatus(null)
         }
-
-        const likeCountRes = await reactionApi.countLikes(video._id, 'Video')
-        setLikeCount(likeCountRes.data.data.likesCount)
       } catch {
-        console.error('Error fetching video stats:')
+        console.error('Error fetching video stats')
       }
     }
-
     fetchVideoStats()
   }, [video._id, video.owner._id, user])
 
   const handleSubscribe = async () => {
-    if (!user) {
-      toast.error('Login required', {
-        description: 'Please login to subscribe to channels'
-      })
-      return
-    }
-
-    setIsLoading(true)
+    if (!user) return toast.error('Login required', { description: 'Please login to subscribe' })
+    setIsSubLoading(true)
     try {
       if (isSubscribed) {
         await subscriptionApi.unsubscribe(video.owner._id)
         setIsSubscribed(false)
-        setSubscriberCount(prev => prev - 1)
-        toast.success('Unsubscribed successfully')
+        setSubscriberCount(p => p - 1)
+        toast.success('Unsubscribed')
       } else {
         await subscriptionApi.subscribe(video.owner._id)
         setIsSubscribed(true)
-        setSubscriberCount(prev => prev + 1)
-        toast.success('Subscribed successfully')
+        setSubscriberCount(p => p + 1)
+        toast.success('Subscribed!')
       }
     } catch {
-      toast.error('Error', {
-        description: 'Failed to update subscription'
-      })
+      toast.error('Error', { description: 'Failed to update subscription' })
     } finally {
-      setIsLoading(false)
+      setIsSubLoading(false)
     }
   }
 
   const handleLike = async () => {
-    if (!user) {
-      toast.error('Login required', {
-        description: 'Please login to like videos'
-      })
-      return
-    }
-
+    if (!user) return toast.error('Login required', { description: 'Please login to like videos' })
     try {
       if (likeStatus === 'liked') {
         await reactionApi.removeReaction(video._id, 'Video')
         setLikeStatus(null)
-        setLikeCount(prev => prev - 1)
+        setLikeCount(p => p - 1)
       } else {
         await reactionApi.addReaction(video._id, true, 'Video')
-        if (likeStatus === 'disliked') setLikeCount(prev => prev + 1)
+        if (likeStatus === 'disliked') setLikeCount(p => p + 1)
         setLikeStatus('liked')
-        setLikeCount(prev => prev + 1)
+        setLikeCount(p => p + 1)
       }
     } catch {
-      toast.error('Error', {
-        description: 'Failed to update like'
-      })
+      toast.error('Error', { description: 'Failed to update like' })
     }
   }
 
   const handleDislike = async () => {
-    if (!user) {
-      toast.error('Login required', {
-        description: 'Please login to dislike videos'
-      })
-      return
-    }
-
+    if (!user) return toast.error('Login required', { description: 'Please login to react' })
     try {
       if (likeStatus === 'disliked') {
         await reactionApi.removeReaction(video._id, 'Video')
         setLikeStatus(null)
       } else {
         await reactionApi.addReaction(video._id, false, 'Video')
-        if (likeStatus === 'liked') setLikeCount(prev => prev - 1)
+        if (likeStatus === 'liked') setLikeCount(p => p - 1)
         setLikeStatus('disliked')
       }
     } catch {
-      toast.error('Error', {
-        description: 'Failed to update dislike'
-      })
+      toast.error('Error', { description: 'Failed to update reaction' })
     }
   }
 
   const handleShare = async () => {
     try {
-      await navigator.share({
-        title: video.title,
-        url: window.location.href
-      })
+      await navigator.share({ title: video.title, url: window.location.href })
     } catch {
-      // Fallback: copy to clipboard
       navigator.clipboard.writeText(window.location.href)
-      toast.success('Link copied to clipboard')
+      toast.success('Link copied!')
     }
   }
 
@@ -157,107 +123,130 @@ export function VideoInfo({ video }: VideoInfoProps) {
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      className="glass rounded-xl p-6 space-y-4"
+      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
+      className="space-y-4"
     >
       {/* Title */}
-      <h1 className="text-2xl font-bold">{video.title}</h1>
+      <h1 className="text-xl sm:text-2xl font-bold text-white leading-snug">
+        {video.title}
+      </h1>
 
-      {/* Stats and Actions */}
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        {/* Channel Info */}
-        <div className="flex items-center gap-4 flex-1">
+      {/* Meta row */}
+      <div className="flex items-center gap-3 text-sm text-white/35">
+        <span className="flex items-center gap-1.5">
+          <Eye className="h-3.5 w-3.5" />
+          {formatViews(video.views)} views
+        </span>
+        <span className="w-1 h-1 rounded-full bg-white/20" />
+        <span className="flex items-center gap-1.5">
+          <Calendar className="h-3.5 w-3.5" />
+          {formatTimeAgo(video.createdAt)}
+        </span>
+      </div>
+
+      {/* Channel row + Actions */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 border-y border-white/[0.06]">
+
+        {/* Channel info */}
+        <div className="flex items-center gap-3">
           <Link href={`/channel/${video.owner.userName}`}>
-            <Avatar className="h-12 w-12 ring-2 ring-blue-500/50 cursor-pointer hover:ring-blue-500 transition-all">
+            <Avatar className="h-11 w-11 ring-2 ring-white/[0.08] hover:ring-violet-500/50 transition-all cursor-pointer">
               <AvatarImage src={video.owner.avatarUrl} alt={video.owner.userName} />
-              <AvatarFallback className="bg-linear-to-br from-blue-500 to-purple-500">
+              <AvatarFallback className="bg-gradient-to-br from-violet-600 to-cyan-500 text-white font-semibold">
                 {video.owner.userName.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
           </Link>
 
-          <div className="flex-1">
+          <div>
             <Link href={`/channel/${video.owner.userName}`}>
-              <h3 className="font-semibold hover:text-blue-400 transition-colors cursor-pointer">
-                {video.owner.fullName}
-              </h3>
+              <p className="font-semibold text-white hover:text-violet-300 transition-colors cursor-pointer text-sm">
+                {video.owner.userName}
+              </p>
             </Link>
-            <p className="text-sm text-muted-foreground">
-              {video.owner.userName}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {formatViews(subscriberCount)} subscribers
-            </p>
+            <p className="text-xs text-white/35">{formatViews(subscriberCount)} subscribers</p>
           </div>
 
-          <Button
+          {/* Subscribe button */}
+          <motion.button
+            whileHover={{ scale: 1.02 }}
+            whileTap={{ scale: 0.97 }}
             onClick={handleSubscribe}
-            disabled={isLoading || video.owner._id === user?._id}
-            className={
-              isSubscribed
-                ? "glass-hover"
-                : "bg-linear-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600"
-            }
+            disabled={isSubLoading || video.owner._id === user?._id}
+            className={`ml-3 flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 disabled:opacity-60 ${isSubscribed
+              ? 'btn-subscribed'
+              : 'btn-subscribe shadow-lg shadow-violet-500/20'
+              }`}
           >
+            {isSubscribed && <Bell className="h-3.5 w-3.5" />}
             {isSubscribed ? 'Subscribed' : 'Subscribe'}
-          </Button>
+          </motion.button>
         </div>
 
-        {/* Action Buttons */}
+        {/* Action buttons */}
         <div className="flex items-center gap-2">
-          {/* Like/Dislike */}
-          <div className="flex items-center glass rounded-full overflow-hidden">
-            <Button
-              variant="ghost"
-              size="sm"
+          {/* Like/Dislike pill */}
+          <div className="flex items-center rounded-full overflow-hidden bg-white/[0.06] border border-white/[0.08]">
+            <button
               onClick={handleLike}
-              className={`rounded-none ${likeStatus === 'liked' ? 'text-blue-400' : ''}`}
+              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all ${likeStatus === 'liked'
+                ? 'text-violet-400 bg-violet-500/15'
+                : 'text-white/60 hover:text-white hover:bg-white/[0.06]'
+                }`}
             >
-              <ThumbsUp className={`h-5 w-5 mr-2 ${likeStatus === 'liked' ? 'fill-current' : ''}`} />
-              {likeCount > 0 && formatViews(likeCount)}
-            </Button>
+              <ThumbsUp className={`h-4 w-4 ${likeStatus === 'liked' ? 'fill-violet-400' : ''}`} />
+              {likeCount > 0 && <span>{formatViews(likeCount)}</span>}
+            </button>
             <div className="w-px h-6 bg-white/10" />
-            <Button
-              variant="ghost"
-              size="sm"
+            <button
               onClick={handleDislike}
-              className={`rounded-none ${likeStatus === 'disliked' ? 'text-blue-400' : ''}`}
+              className={`flex items-center px-4 py-2 text-sm transition-all ${likeStatus === 'disliked'
+                ? 'text-red-400 bg-red-500/15'
+                : 'text-white/60 hover:text-white hover:bg-white/[0.06]'
+                }`}
             >
-              <ThumbsDown className={`h-5 w-5 ${likeStatus === 'disliked' ? 'fill-current' : ''}`} />
-            </Button>
+              <ThumbsDown className={`h-4 w-4 ${likeStatus === 'disliked' ? 'fill-red-400' : ''}`} />
+            </button>
           </div>
 
           {/* Share */}
-          <Button variant="ghost" size="sm" onClick={handleShare} className="glass rounded-full">
-            <Share2 className="h-5 w-5 mr-2" />
+          <button
+            onClick={handleShare}
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.06] border border-white/[0.08] text-sm font-medium text-white/60 hover:text-white hover:bg-white/[0.09] transition-all"
+          >
+            <Share2 className="h-4 w-4" />
             Share
-          </Button>
+          </button>
 
           {/* More */}
-          <Button variant="ghost" size="icon" className="glass rounded-full">
-            <MoreVertical className="h-5 w-5" />
-          </Button>
+          <button className="flex items-center px-3 py-2 rounded-full bg-white/[0.06] border border-white/[0.08] text-white/60 hover:text-white hover:bg-white/[0.09] transition-all">
+            <MoreHorizontal className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
       {/* Description */}
       {video.description && (
-        <div className="glass rounded-lg p-4">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground mb-2">
-            <span className="font-semibold text-foreground">{formatViews(video.views)} views</span>
-            <span>•</span>
-            <span>{formatTimeAgo(video.createdAt)}</span>
-          </div>
-          
-          <p className={`whitespace-pre-wrap ${!isExpanded ? 'line-clamp-2' : ''}`}>
-            {video.description}
-          </p>
-          
-          {video.description.length > 150 && (
+        <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4">
+          <AnimatePresence initial={false}>
+            <motion.p
+              key={isExpanded ? 'expanded' : 'collapsed'}
+              className={`text-sm text-white/60 whitespace-pre-wrap leading-relaxed ${!isExpanded ? 'line-clamp-3' : ''}`}
+            >
+              {video.description}
+            </motion.p>
+          </AnimatePresence>
+
+          {video.description.length > 180 && (
             <button
               onClick={() => setIsExpanded(!isExpanded)}
-              className="text-sm font-semibold mt-2 hover:text-blue-400 transition-colors"
+              className="flex items-center gap-1.5 mt-3 text-xs font-semibold text-violet-400 hover:text-violet-300 transition-colors"
             >
-              {isExpanded ? 'Show less' : 'Show more'}
+              {isExpanded ? (
+                <><ChevronUp className="h-3.5 w-3.5" /> Show less</>
+              ) : (
+                <><ChevronDown className="h-3.5 w-3.5" /> Show more</>
+              )}
             </button>
           )}
         </div>
