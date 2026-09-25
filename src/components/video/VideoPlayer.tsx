@@ -5,13 +5,18 @@ import Hls from 'hls.js'
 import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, SkipForward, SkipBack, Loader2, Settings } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Slider } from '@/components/ui/slider'
+import videoApi from '@/lib/api/client/videoApi'
+
+// a view counts once playback passes this point (or the video ends, for shorter clips)
+const VIEW_THRESHOLD_SECONDS = 5
 
 interface VideoPlayerProps {
   videoUrl: string
   thumbnail?: string
+  videoId?: string
 }
 
-export function VideoPlayer({ videoUrl, thumbnail }: VideoPlayerProps) {
+export function VideoPlayer({ videoUrl, thumbnail, videoId }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const hideControlsTimer = useRef<NodeJS.Timeout | null>(null)
@@ -96,6 +101,28 @@ export function VideoPlayer({ videoUrl, thumbnail }: VideoPlayerProps) {
       video.removeEventListener('canplay', handleCanPlay)
     }
   }, [])
+
+  // View tracking — sent from the browser so the backend sees the real viewer
+  useEffect(() => {
+    const video = videoRef.current
+    if (!video || !videoId) return
+
+    let recorded = false
+    const maybeRecordView = () => {
+      if (recorded) return
+      if (video.currentTime >= VIEW_THRESHOLD_SECONDS || video.ended) {
+        recorded = true
+        videoApi.recordView(videoId).catch(() => { /* view tracking must never disrupt playback */ })
+      }
+    }
+
+    video.addEventListener('timeupdate', maybeRecordView)
+    video.addEventListener('ended', maybeRecordView)
+    return () => {
+      video.removeEventListener('timeupdate', maybeRecordView)
+      video.removeEventListener('ended', maybeRecordView)
+    }
+  }, [videoId])
 
   // Auto-hide controls
   const resetHideTimer = useCallback(() => {

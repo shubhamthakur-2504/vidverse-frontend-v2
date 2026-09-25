@@ -78,6 +78,7 @@ export default async function WatchPage({ params }: WatchPageParams) {
                   <VideoPlayer
                     videoUrl={videoData.videoFileUrl}
                     thumbnail={videoData.thumbnailUrl}
+                    videoId={videoId}
                   />
                 </div>
 

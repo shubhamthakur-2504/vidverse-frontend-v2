@@ -26,6 +26,10 @@ const videoApi = {
         return apiClient.get("/videos/getallvideos");
     },
 
+    recordView: (videoId: string) => {
+        return apiClient.post(`/videos/${videoId}/view`);
+    },
+
 };
 
 export default videoApi;
