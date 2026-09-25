@@ -11,79 +11,68 @@ const apiClient: AxiosInstance = axios.create({
     withCredentials: true,
 })
 
-const plainAxios: AxiosInstance = axios.create({
+// used only for the refresh call, so it never goes through the 401 interceptors below.
+// withCredentials must be true: the refresh token is an httpOnly cookie and the API is on another origin.
+const refreshClient: AxiosInstance = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
     timeout: 120000,
-    withCredentials: false,
+    withCredentials: true,
 })
 
+// same as apiClient, but a failed refresh does not redirect to login (used for "who am I" on page load)
 export const noAuthRedirectClient: AxiosInstance = axios.create({
     baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
     timeout: 120000,
     withCredentials: true,
 })
 
-let isRefreshing = false
+// single-flight refresh: concurrent 401s all wait on the same request instead of each refreshing
+let refreshPromise: Promise<void> | null = null
 
-type FailedRequestQueueItem = {
-    resolve: (value?: unknown) => void
-    reject: (error: AxiosError) => void
+export const refreshSession = (): Promise<void> => {
+    if (!refreshPromise) {
+        refreshPromise = refreshClient
+            .post("/user/refreshaccess")
+            .then(() => undefined)
+            .finally(() => {
+                refreshPromise = null
+            })
+    }
+    return refreshPromise
 }
 
-let failedQueue: FailedRequestQueueItem[] = []
+const shouldTryRefresh = (error: AxiosError): error is AxiosError & { config: RetryAxiosRequestConfig } => {
+    const originalRequest = error.config as RetryAxiosRequestConfig | undefined
+    if (!originalRequest || originalRequest._retry || error.response?.status !== 401) return false
 
-const processQueue = (error: unknown, response?: unknown) => {
-    failedQueue.forEach(({ reject, resolve }) => {
-        if (error) reject(error as AxiosError)
-        else resolve(response)
-    })
-    failedQueue = []
+    const url = originalRequest.url ?? ""
+    const isAuthRequest = url.includes("/user/login") || url.includes("/user/register") || url.includes("/user/refreshaccess")
+    return !isAuthRequest
 }
 
-apiClient.interceptors.response.use(
-    (response) => response,
+const retryAfterRefresh = (client: AxiosInstance, redirectOnFailure: boolean) =>
     async (error: AxiosError) => {
-        const originalRequest = error.config as RetryAxiosRequestConfig
-
-        if (!originalRequest) {
+        if (!shouldTryRefresh(error)) {
             return Promise.reject(error)
         }
 
-        const isRefreshRequest = originalRequest.url?.includes("/user/refreshaccess")
-        const isAuthRequest = originalRequest.url?.includes("/user/login") || originalRequest.url?.includes("/user/register")
+        const originalRequest = error.config
+        originalRequest._retry = true
 
-        if (error.response?.status === 401 && !originalRequest._retry && !isRefreshRequest && !isAuthRequest) {
-            originalRequest._retry = true
-            if (isRefreshing) {
-                return new Promise((resolve, reject) => {
-                    failedQueue.push({ resolve, reject })
-                })
-                    .then(() => apiClient(originalRequest))
-                    .catch(err => Promise.reject(err))
+        try {
+            await refreshSession()
+        } catch (refreshError) {
+            if (redirectOnFailure && !window.location.pathname.startsWith("/auth")) {
+                const currentPath = window.location.pathname + window.location.search
+                window.location.href = `/auth/login?redirect=${encodeURIComponent(currentPath)}`
             }
-
-            isRefreshing = true
-
-            try {
-                await plainAxios.post("/user/refreshaccess")
-
-                processQueue(null)
-
-                return apiClient(originalRequest)
-            } catch (refreshError) {
-                processQueue(refreshError);
-                const currentPath = window.location.pathname + window.location.search;
-                if (!window.location.pathname.startsWith("/auth")) {
-                    window.location.href = `/auth/login?redirect=${encodeURIComponent(currentPath)}`;
-                }
-                return Promise.reject(refreshError);
-            } finally {
-                isRefreshing = false;
-            }
+            return Promise.reject(refreshError)
         }
 
-        return Promise.reject(error)
+        return client(originalRequest)
     }
-)
+
+apiClient.interceptors.response.use((response) => response, retryAfterRefresh(apiClient, true))
+noAuthRedirectClient.interceptors.response.use((response) => response, retryAfterRefresh(noAuthRedirectClient, false))
 
 export default apiClient
