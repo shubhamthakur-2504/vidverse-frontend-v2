@@ -1,10 +1,9 @@
 "use client"
 
 import { useState, useEffect } from 'react'
-import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
-import { ThumbsUp, ThumbsDown, Share2, MoreHorizontal, Bell, ChevronDown, ChevronUp, Eye, Calendar } from 'lucide-react'
+import { ThumbsUp, ThumbsDown, Share2, Bell, ChevronDown, ChevronUp, Eye, Calendar } from 'lucide-react'
 import { formatViews, formatTimeAgo } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -150,21 +149,17 @@ export function VideoInfo({ video }: VideoInfoProps) {
 
         {/* Channel info */}
         <div className="flex items-center gap-3">
-          <Link href={`/channel/${video.owner.userName}`}>
-            <Avatar className="h-11 w-11 ring-2 ring-white/[0.08] hover:ring-violet-500/50 transition-all cursor-pointer">
-              <AvatarImage src={video.owner.avatarUrl} alt={video.owner.userName} />
-              <AvatarFallback className="bg-gradient-to-br from-violet-600 to-cyan-500 text-white font-semibold">
-                {video.owner.userName.charAt(0).toUpperCase()}
-              </AvatarFallback>
-            </Avatar>
-          </Link>
+          <Avatar className="h-11 w-11 ring-2 ring-white/[0.08]">
+            <AvatarImage src={video.owner.avatarUrl} alt={video.owner.userName} />
+            <AvatarFallback className="bg-gradient-to-br from-violet-600 to-cyan-500 text-white font-semibold">
+              {video.owner.userName.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
 
           <div>
-            <Link href={`/channel/${video.owner.userName}`}>
-              <p className="font-semibold text-white hover:text-violet-300 transition-colors cursor-pointer text-sm">
-                {video.owner.userName}
-              </p>
-            </Link>
+            <p className="font-semibold text-white text-sm">
+              {video.owner.userName}
+            </p>
             <p className="text-xs text-white/35">{formatViews(subscriberCount)} subscribers</p>
           </div>
 
@@ -219,10 +214,6 @@ export function VideoInfo({ video }: VideoInfoProps) {
             Share
           </button>
 
-          {/* More */}
-          <button className="flex items-center px-3 py-2 rounded-full bg-white/[0.06] border border-white/[0.08] text-white/60 hover:text-white hover:bg-white/[0.09] transition-all">
-            <MoreHorizontal className="h-4 w-4" />
-          </button>
         </div>
       </div>
 

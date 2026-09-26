@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import Hls from 'hls.js'
-import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, SkipForward, SkipBack, Loader2, Settings } from 'lucide-react'
+import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, SkipForward, SkipBack, Loader2 } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Slider } from '@/components/ui/slider'
 import videoApi from '@/lib/api/client/videoApi'
@@ -33,7 +33,6 @@ export function VideoPlayer({ videoUrl, thumbnail, videoId }: VideoPlayerProps) 
   const [buffered, setBuffered] = useState(0)
   const [loadError, setLoadError] = useState<string | null>(null)
   const [showClickFeedback, setShowClickFeedback] = useState<'play' | 'pause' | null>(null)
-  const [settingsOpen, setSettingsOpen] = useState(false)
 
   // HLS initialization
   useEffect(() => {
@@ -387,12 +386,6 @@ export function VideoPlayer({ videoUrl, thumbnail, videoId }: VideoPlayerProps) 
 
                 {/* Right controls */}
                 <div className="flex items-center gap-1">
-                  <button
-                    onClick={() => setSettingsOpen(!settingsOpen)}
-                    className="p-2 rounded-full hover:bg-white/10 transition-colors text-white/60 hover:text-white"
-                  >
-                    <Settings className="h-4 w-4" />
-                  </button>
                   <button onClick={toggleFullscreen} className="p-2 rounded-full hover:bg-white/10 transition-colors text-white/80 hover:text-white">
                     {isFullscreen
                       ? <Minimize className="h-4.5 w-4.5" />

@@ -1,6 +1,5 @@
 "use client"
 
-import Link from 'next/link'
 import Image from 'next/image'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { formatViews, formatTimeAgo, formatDuration } from '@/lib/utils'
@@ -82,26 +81,22 @@ export function VideoCard({ video, index = 0 }: VideoCardProps) {
 
         {/* Info */}
         <div className="flex gap-3 px-0.5">
-          <Link href={`/channel/${video.owner.userName}`} onClick={(e) => e.stopPropagation()}>
+          <div className="flex-shrink-0">
             <Avatar className="h-8 w-8 ring-1 ring-white/[0.08] group-hover:ring-violet-500/40 transition-all duration-300 flex-shrink-0 mt-0.5">
               <AvatarImage src={video.owner.avatarUrl} alt={video.owner.userName} />
               <AvatarFallback className="bg-gradient-to-br from-violet-600 to-cyan-500 text-white text-xs font-semibold">
                 {video.owner.userName.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-          </Link>
+          </div>
 
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-sm line-clamp-2 text-white/90 group-hover:text-white transition-colors leading-snug mb-1">
               {video.title}
             </h3>
-            <Link
-              href={`/channel/${video.owner.userName}`}
-              onClick={(e) => e.stopPropagation()}
-              className="block text-xs text-white/40 hover:text-white/70 transition-colors mb-0.5"
-            >
+            <p className="text-xs text-white/40 mb-0.5">
               {video.owner.userName}
-            </Link>
+            </p>
             <div className="flex items-center gap-1.5 text-xs text-white/30">
               <span>{formatViews(video.views)} views</span>
               <span className="w-0.5 h-0.5 rounded-full bg-white/20" />

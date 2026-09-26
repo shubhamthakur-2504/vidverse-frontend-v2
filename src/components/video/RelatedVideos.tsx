@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { formatViews, formatTimeAgo, formatDuration } from '@/lib/utils'
 import { motion } from 'framer-motion'
-import { VideoIcon, ChevronRight } from 'lucide-react'
+import { VideoIcon } from 'lucide-react'
 import videoApi from '@/lib/api/client/videoApi'
 import { Video } from '@/lib/types/videoType'
 
@@ -66,9 +66,6 @@ export function RelatedVideos({ currentVideoId }: { currentVideoId: string }) {
       {/* Header */}
       <div className="flex items-center justify-between mb-5">
         <h3 className="text-base font-bold text-white">Up Next</h3>
-        <button className="flex items-center gap-1 text-xs text-white/35 hover:text-violet-400 transition-colors">
-          See all <ChevronRight className="h-3 w-3" />
-        </button>
       </div>
 
       {/* Video list */}
