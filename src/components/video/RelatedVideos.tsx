@@ -1,55 +1,14 @@
 "use client"
 
-import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { formatViews, formatTimeAgo, formatDuration } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { VideoIcon } from 'lucide-react'
-import videoApi from '@/lib/api/client/videoApi'
 import { Video } from '@/lib/types/videoType'
 
-export function RelatedVideos({ currentVideoId }: { currentVideoId: string }) {
-  const [videos, setVideos] = useState<Video[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-
-  const fetchRelatedVideos = useCallback(async () => {
-    setIsLoading(true)
-    try {
-      const res = await videoApi.getAll()
-      const allVideos: Video[] = res.data?.data?.items || []
-      const related = allVideos.filter(v => v._id !== currentVideoId).slice(0, 12)
-      setVideos(related)
-    } catch (error) {
-      console.error('Error fetching related videos:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }, [currentVideoId])
-
-  useEffect(() => { fetchRelatedVideos() }, [fetchRelatedVideos])
-
-  if (isLoading) {
-    return (
-      <div className="space-y-3">
-        <div className="flex items-center justify-between mb-4">
-          <div className="w-32 h-5 shimmer-container rounded-md" />
-          <div className="w-16 h-4 shimmer-container rounded-md" />
-        </div>
-        {Array.from({ length: 6 }).map((_, i) => (
-          <div key={i} className="flex gap-3">
-            <div className="w-36 aspect-video rounded-xl shimmer-container flex-shrink-0" />
-            <div className="flex-1 space-y-2 pt-1">
-              <div className="h-3.5 shimmer-container rounded w-full" />
-              <div className="h-3 shimmer-container rounded w-3/4" />
-              <div className="h-2.5 shimmer-container rounded w-1/2" />
-            </div>
-          </div>
-        ))}
-      </div>
-    )
-  }
-
+// "up next": the watch page fetches these server-side (GET /v2/videos/:id/related) and passes them in
+export function RelatedVideos({ videos }: { videos: Video[] }) {
   if (videos.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 gap-3">

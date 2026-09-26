@@ -1,30 +1,21 @@
 import apiClient from "./apiClient";
 
+type CommentTarget = "Video" | "Tweet";
+const basePath = (targetId: string, targetType: CommentTarget) =>
+    targetType === "Video" ? `/videos/${targetId}/comments` : `/posts/${targetId}/comments`;
+
 const commentApi = {
-    // one page of comments, newest first; pass the previous page's nextCursor to get the next one
-    all: (targetId: string, targetType: "Video" | "Tweet", cursor?: string) => {
-        const route = targetType === "Video"
-            ? `/videos/getallcomments/${targetId}`
-            : `/tweets/getallcomment/${targetId}`;
+    // one page of comments (newest first) with like / dislike counts and the viewer's reaction
+    all: (targetId: string, targetType: CommentTarget, cursor?: string) =>
+        apiClient.get(basePath(targetId, targetType), { params: cursor ? { cursor } : undefined }),
 
-        return apiClient.get(route, { params: cursor ? { cursor } : undefined });
-    },
+    post: (targetId: string, content: string, targetType: CommentTarget) =>
+        apiClient.post(basePath(targetId, targetType), { content }),
 
-    post: (targetId: string, content: string, targetType: "Video" | "Tweet") => {
-        const prefix = targetType === "Video" ? "videos" : "tweets";
-        return apiClient.post(`/${prefix}/createcomment/${targetId}`, { content });
-    },
-
-    delete: (commentId: string, targetType: "Video" | "Tweet") => {
-        const prefix = targetType === "Video" ? "videos" : "tweets";
-        return apiClient.delete(`/${prefix}/deletecomment/${commentId}`);
-    },
-
-    edit: (commentId: string, content: string, targetType: "Video" | "Tweet") => {
-        const prefix = targetType === "Video" ? "videos" : "tweets";
-        const routeSuffix = targetType === "Video" ? "editcomment" : "updatecomment";
-        return apiClient.patch(`/${prefix}/${routeSuffix}/${commentId}`, { content });
-    },
+    // a comment is addressed by its own id, wherever it was posted
+    edit: (commentId: string, content: string) => apiClient.patch(`/comments/${commentId}`, { content }),
+    // allowed for the comment's author and for the owner of the video / post
+    delete: (commentId: string) => apiClient.delete(`/comments/${commentId}`),
 }
 
 export default commentApi;

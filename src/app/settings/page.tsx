@@ -7,7 +7,7 @@ import { unwrapApiResponse } from '@/lib/unwrapApiRes'
 export default async function SettingsPage() {
   let user: SettingsClientUser = null
   try {
-    const res = await serverFetch('/user/getcurrentuser')
+    const res = await serverFetch('/me')
     user = unwrapApiResponse<SettingsClientUser>(res)
   } catch {
     user = null

@@ -13,7 +13,7 @@ type ServerUser = {
 export default async function ServerHero({ user }: { user: ServerUser }) {
   let stats = { subscribersCount: 0, subscriptionsCount: 0 }
   try {
-    const res = await serverFetch('/user/getuserdetails')
+    const res = await serverFetch('/me/stats')
     const data = unwrapApiResponse<{ subscribersCount?: number; subscriptionsCount?: number }>(res)
     stats = { subscribersCount: data.subscribersCount || 0, subscriptionsCount: data.subscriptionsCount || 0 }
   } catch {

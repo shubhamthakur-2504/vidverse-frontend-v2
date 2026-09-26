@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ThumbsUp, ThumbsDown, Share2, Bell, ChevronDown, ChevronUp, Eye, Calendar } from 'lucide-react'
 import { formatViews, formatTimeAgo } from '@/lib/utils'
@@ -9,49 +9,23 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import reactionApi from '@/lib/api/client/reactionApi'
 import subscriptionApi from '@/lib/api/client/subscriptionApi'
 import { toast } from 'sonner'
-import { Video } from '@/lib/types/videoType'
+import { WatchVideo } from '@/lib/types/videoType'
 
 interface VideoInfoProps {
-  video: Video
+  video: WatchVideo
 }
 
 export function VideoInfo({ video }: VideoInfoProps) {
   const { user } = useAuth()
   const [isExpanded, setIsExpanded] = useState(false)
-  const [isSubscribed, setIsSubscribed] = useState(false)
-  const [subscriberCount, setSubscriberCount] = useState(0)
-  const [likeStatus, setLikeStatus] = useState<'liked' | 'disliked' | null>(null)
-  const [likeCount, setLikeCount] = useState(0)
+  // counts and the viewer's own state come with the server-rendered payload (GET /v2/videos/:id)
+  const [isSubscribed, setIsSubscribed] = useState(video.viewer.isSubscribed)
+  const [subscriberCount, setSubscriberCount] = useState(video.owner.subscribersCount)
+  const [likeStatus, setLikeStatus] = useState<'liked' | 'disliked' | null>(
+    video.viewer.reaction === 'like' ? 'liked' : video.viewer.reaction === 'dislike' ? 'disliked' : null
+  )
+  const [likeCount, setLikeCount] = useState(video.stats.likes)
   const [isSubLoading, setIsSubLoading] = useState(false)
-
-  useEffect(() => {
-    // independent requests: one failing must not stop the others from showing
-    const fetchVideoStats = async () => {
-      const [subCount, likeCountRes, subStatus, likeStatusRes] = await Promise.allSettled([
-        subscriptionApi.count(video.owner._id),
-        reactionApi.countLikes(video._id, 'Video'),
-        user ? subscriptionApi.status(video.owner._id) : Promise.resolve(null),
-        user ? reactionApi.status(video._id, 'Video') : Promise.resolve(null),
-      ])
-
-      if (subCount.status === 'fulfilled') setSubscriberCount(subCount.value.data.data.count)
-      // the API returns { likes }
-      if (likeCountRes.status === 'fulfilled') setLikeCount(likeCountRes.value.data.data.likes ?? 0)
-      if (subStatus.status === 'fulfilled' && subStatus.value) setIsSubscribed(subStatus.value.data.data.isSubscribed)
-      if (likeStatusRes.status === 'fulfilled' && likeStatusRes.value) {
-        const status = likeStatusRes.value.data.data.status
-        setLikeStatus(
-          status === 'like' ? 'liked'
-            : status === 'dislike' ? 'disliked'
-              : null
-        )
-      }
-      if ([subCount, likeCountRes, subStatus, likeStatusRes].some(r => r.status === 'rejected')) {
-        console.error('Error fetching some video stats')
-      }
-    }
-    fetchVideoStats()
-  }, [video._id, video.owner._id, user])
 
   const handleSubscribe = async () => {
     if (!user) return toast.error('Login required', { description: 'Please login to subscribe' })
@@ -83,8 +57,8 @@ export function VideoInfo({ video }: VideoInfoProps) {
         setLikeStatus(null)
         setLikeCount(p => p - 1)
       } else {
+        // a dislike never counted as a like, so switching from dislike to like adds exactly one
         await reactionApi.addReaction(video._id, true, 'Video')
-        if (likeStatus === 'disliked') setLikeCount(p => p + 1)
         setLikeStatus('liked')
         setLikeCount(p => p + 1)
       }
@@ -167,7 +141,7 @@ export function VideoInfo({ video }: VideoInfoProps) {
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.97 }}
             onClick={handleSubscribe}
-            disabled={isSubLoading || video.owner._id === user?._id}
+            disabled={isSubLoading || video.viewer.isOwner}
             className={`ml-3 flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 disabled:opacity-60 ${isSubscribed
               ? 'btn-subscribed'
               : 'btn-subscribe shadow-lg shadow-violet-500/20'

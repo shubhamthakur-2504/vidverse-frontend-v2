@@ -1,25 +1,12 @@
 import apiClient from "./apiClient";
 
 const subscriptionApi = {
-    subscribe: (channelId: string) => {
-        return apiClient.post(`/subscription/subscribe/${channelId}`);
-    },
-
-    unsubscribe: (channelId: string) => {
-        return apiClient.delete(`/subscription/unsubscribe/${channelId}`);
-    },
-
-    status: (channelId: string) => {
-        return apiClient.get(`/subscription/issubscribed/${channelId}`);
-    },
-
-    count: (channelId: string) => {
-        return apiClient.get(`/subscription/subscriberscount/${channelId}`);
-    },
-
-    mySubscriptions: () => {
-        return apiClient.get(`/subscription/mysubscriptions`);
-    }
+    // PUT is idempotent: subscribing twice is not an error
+    subscribe: (channelId: string) => apiClient.put(`/channels/${channelId}/subscription`),
+    unsubscribe: (channelId: string) => apiClient.delete(`/channels/${channelId}/subscription`),
+    mySubscriptions: (cursor?: string) => apiClient.get("/me/subscriptions", { params: cursor ? { cursor } : undefined }),
+    // public channel page: profile, counts and whether the viewer is subscribed
+    channel: (userName: string) => apiClient.get(`/channels/${encodeURIComponent(userName)}`),
 };
 
 export default subscriptionApi;

@@ -6,7 +6,7 @@ import { RelatedVideos } from '@/components/video/RelatedVideos'
 import { VideoPlayerSkeleton } from '@/components/video/VideoPlayerSkeleton'
 import { videoApi } from '@/lib/api/server/videoApi'
 import { unwrapApiResponse } from '@/lib/unwrapApiRes'
-import { Video } from '@/lib/types/videoType'
+import { Video, WatchVideo } from '@/lib/types/videoType'
 import Link from 'next/link'
 import { Home, ChevronRight } from 'lucide-react'
 
@@ -18,12 +18,25 @@ export default async function WatchPage({ params }: WatchPageParams) {
   const resolvedParams = await Promise.resolve(params)
   const videoId: string = resolvedParams.videoId
 
-  let videoData = null
+  // the watch payload (video, counts, viewer state) and "up next" are fetched in parallel on the server
+  const [detailsRes, relatedRes] = await Promise.allSettled([
+    videoApi.getVideoDetails(videoId),
+    videoApi.getRelated(videoId),
+  ])
+
+  let videoData: WatchVideo | null = null
   try {
-    const res = await videoApi.getVideoDetails(videoId)
-    videoData = unwrapApiResponse<Video>(res)
+    if (detailsRes.status === 'rejected') throw detailsRes.reason
+    videoData = unwrapApiResponse<WatchVideo>(detailsRes.value)
   } catch (error: unknown) {
     console.error('Failed to fetch video details.', error instanceof Error ? error.message : error)
+  }
+
+  let relatedVideos: Video[] = []
+  try {
+    if (relatedRes.status === 'fulfilled') relatedVideos = unwrapApiResponse<Video[]>(relatedRes.value) ?? []
+  } catch {
+    relatedVideos = []
   }
 
   if (videoData == null) {
@@ -90,14 +103,14 @@ export default async function WatchPage({ params }: WatchPageParams) {
                 <div className="h-px bg-white/[0.05]" />
 
                 {/* Comments */}
-                <CommentSection targetId={videoId} targetType="Video" />
+                <CommentSection targetId={videoId} targetType="Video" isContentOwner={videoData.viewer.isOwner} />
               </>
             </Suspense>
           </div>
 
           {/* Right — Sidebar */}
           <div className="xl:sticky xl:top-20 xl:self-start xl:max-h-[calc(100vh-6rem)] xl:overflow-y-auto pr-0.5">
-            <RelatedVideos currentVideoId={videoId} />
+            <RelatedVideos videos={relatedVideos} />
           </div>
         </div>
       </div>

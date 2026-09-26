@@ -292,7 +292,7 @@ export default function SettingsPageClient({ user: serverUser }: { user?: Settin
 
     setTogglingVideo(true)
     try {
-      await videoApi.togglePublish(selectedVideo._id)
+      await videoApi.setPublished(selectedVideo._id, !selectedVideo.isPublished)
       const response = await videoApi.getMine()
       const data = unwrapApiResponse<VideoType[]>(response.data)
       setVideos(data)

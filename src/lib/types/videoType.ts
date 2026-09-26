@@ -42,4 +42,12 @@ export interface Video {
 }
 
 
+// GET /v2/videos/:id: the video with counts and the viewer's own state, for the watch page
+export interface WatchVideo extends Omit<Video, 'owner'> {
+  relativeTime: string
+  owner: Video['owner'] & { subscribersCount: number }
+  stats: { likes: number; dislikes: number; comments: number }
+  viewer: { reaction: 'like' | 'dislike' | null; isSubscribed: boolean; isOwner: boolean }
+}
+
 export type { UploadVideoPayload, UpdateVideoPayload, PlayListPayload, EditPlayListPayload };

@@ -1,4 +1,4 @@
-import { Video } from "@/lib/types/videoType";
+import { Video, WatchVideo } from "@/lib/types/videoType";
 import { serverFetch } from "./serverFetch";
 import { ApiSuccess, ApiError, Page } from "@/lib/types/apiType";
 
@@ -8,12 +8,16 @@ export const videoApi = {
         if (category) params.set("category", category);
         if (query) params.set("query", query);
         const queryString = params.toString() ? `?${params.toString()}` : "";
-        return serverFetch<ApiSuccess<Page<Video>> | ApiError>(`/videos/getallvideos${queryString}`);
+        return serverFetch<ApiSuccess<Page<Video>> | ApiError>(`/videos${queryString}`);
     },
+    // the watch-page payload: video, owner, counts and the viewer's own state (from the forwarded cookies)
     getVideoDetails: (videoId: string) => {
-        return serverFetch<ApiSuccess<Video> | ApiError>(`/videos/getvideodetails/${videoId}`);
+        return serverFetch<ApiSuccess<WatchVideo> | ApiError>(`/videos/${videoId}`);
+    },
+    getRelated: (videoId: string, limit = 12) => {
+        return serverFetch<ApiSuccess<Video[]> | ApiError>(`/videos/${videoId}/related?limit=${limit}`);
     },
     getCategories: () => {
-        return serverFetch<ApiSuccess<string[]> | ApiError>("/videos/getcategories");
+        return serverFetch<ApiSuccess<string[]> | ApiError>("/videos/categories");
     },
 };

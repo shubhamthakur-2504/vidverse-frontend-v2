@@ -1,27 +1,28 @@
 "use client"
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig } from "axios"
+import { API_PREFIX } from "../origin"
 
 interface RetryAxiosRequestConfig extends InternalAxiosRequestConfig {
     _retry?: boolean
 }
 
 const apiClient: AxiosInstance = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
+    baseURL: API_PREFIX,
     timeout: 120000,
     withCredentials: true,
 })
 
-// used only for the refresh call, so it never goes through the 401 interceptors below.
-// withCredentials must be true: the refresh token is an httpOnly cookie and the API is on another origin.
+// Requests go to this app's own /api (rewritten to the API server by next.config), so the auth cookies are
+// first-party. The refresh client never goes through the 401 interceptors below.
 const refreshClient: AxiosInstance = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
+    baseURL: API_PREFIX,
     timeout: 120000,
     withCredentials: true,
 })
 
 // same as apiClient, but a failed refresh does not redirect to login (used for "who am I" on page load)
 export const noAuthRedirectClient: AxiosInstance = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_BASE_URL,
+    baseURL: API_PREFIX,
     timeout: 120000,
     withCredentials: true,
 })
@@ -32,7 +33,7 @@ let refreshPromise: Promise<void> | null = null
 export const refreshSession = (): Promise<void> => {
     if (!refreshPromise) {
         refreshPromise = refreshClient
-            .post("/user/refreshaccess")
+            .post("/auth/refresh")
             .then(() => undefined)
             .finally(() => {
                 refreshPromise = null
@@ -46,7 +47,7 @@ const shouldTryRefresh = (error: AxiosError): error is AxiosError & { config: Re
     if (!originalRequest || originalRequest._retry || error.response?.status !== 401) return false
 
     const url = originalRequest.url ?? ""
-    const isAuthRequest = url.includes("/user/login") || url.includes("/user/register") || url.includes("/user/refreshaccess")
+    const isAuthRequest = url.includes("/auth/login") || url.includes("/auth/register") || url.includes("/auth/refresh")
     return !isAuthRequest
 }
 

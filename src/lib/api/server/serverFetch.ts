@@ -1,22 +1,11 @@
 import { cookies } from 'next/headers'
+import { apiOrigin, API_PREFIX } from '../origin'
 
-const BASE_URL = process.env.API_BASE_URL || process.env.NEXT_PUBLIC_API_BASE_URL;
-
+// server components call the API directly (not through the /api rewrite) and forward the visitor's cookies
 export async function serverFetch<T>(path: string): Promise<T> {
-  if (!BASE_URL) {
-    throw new Error('API base URL is not configured')
-  }
-
-  if (BASE_URL.startsWith('/')) {
-    throw new Error(
-      `Server API base URL must be absolute, but got "${BASE_URL}". Set API_BASE_URL to your backend origin, for example http://localhost:8000/api.`
-    )
-  }
-
   const cookieHeader = (await cookies()).toString()
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const res = await fetch(`${apiOrigin()}${API_PREFIX}${path}`, {
     cache: 'no-store',
-    credentials: 'include',
     headers: cookieHeader ? { cookie: cookieHeader } : undefined,
   });
 
@@ -36,5 +25,5 @@ export async function serverFetch<T>(path: string): Promise<T> {
 }
 
 export const healthCheckApi = {
-  GET: () => serverFetch("/healthcheck")
+  GET: () => serverFetch("/health")
 }
