@@ -76,6 +76,7 @@ export default async function WatchPage({ params }: WatchPageParams) {
                 {/* Video Player */}
                 <div className="rounded-2xl overflow-hidden shadow-2xl shadow-black/60">
                   <VideoPlayer
+                    key={videoId}
                     videoUrl={videoData.videoFileUrl}
                     thumbnail={videoData.thumbnailUrl}
                     videoId={videoId}

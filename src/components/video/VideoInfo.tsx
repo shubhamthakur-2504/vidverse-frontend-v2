@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Button } from '@/components/ui/button'
 import { ThumbsUp, ThumbsDown, Share2, Bell, ChevronDown, ChevronUp, Eye, Calendar } from 'lucide-react'
 import { formatViews, formatTimeAgo } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react'
 import Hls from 'hls.js'
-import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, SkipForward, SkipBack, Loader2 } from 'lucide-react'
+import { Play, Pause, Volume2, VolumeX, Maximize, Minimize, SkipForward, SkipBack } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Slider } from '@/components/ui/slider'
 import videoApi from '@/lib/api/client/videoApi'
@@ -35,15 +35,12 @@ export function VideoPlayer({ videoUrl, thumbnail, videoId }: VideoPlayerProps) 
   const [showClickFeedback, setShowClickFeedback] = useState<'play' | 'pause' | null>(null)
 
   // HLS initialization
+  // the watch page mounts one player per video (key={videoId}), so loading/error state starts fresh
+  // for each video and does not need resetting here
   useEffect(() => {
     if (!videoRef.current) return
     const video = videoRef.current
     const isHlsSource = /\.m3u8($|\?)/i.test(videoUrl)
-
-    video.removeAttribute('src')
-    video.load()
-    setIsLoading(true)
-    setLoadError(null)
 
     if (Hls.isSupported() && isHlsSource) {
       const hls = new Hls({ enableWorker: true, lowLatencyMode: true, backBufferLength: 90 })
@@ -59,9 +56,9 @@ export function VideoPlayer({ videoUrl, thumbnail, videoId }: VideoPlayerProps) 
         }
       })
     } else {
+      // native playback (Safari HLS, mp4): the loadedmetadata / canplay listeners below clear the spinner
       video.src = videoUrl
       video.load()
-      setIsLoading(false)
     }
 
     return () => { hlsRef.current?.destroy() }
