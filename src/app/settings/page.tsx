@@ -1,6 +1,6 @@
 import ServerHero from '@/components/settings/ServerHero'
 import SettingsClient from '@/components/settings/SettingsClient'
-import type { SettingsClientUser } from '@/components/settings/page.client'
+import type { SettingsClientUser } from '@/components/settings/SettingsClient'
 import { serverFetch } from '@/lib/api/server/serverFetch'
 import { unwrapApiResponse } from '@/lib/unwrapApiRes'
 
