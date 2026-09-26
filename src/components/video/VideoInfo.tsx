@@ -27,28 +27,29 @@ export function VideoInfo({ video }: VideoInfoProps) {
   const [isSubLoading, setIsSubLoading] = useState(false)
 
   useEffect(() => {
+    // independent requests: one failing must not stop the others from showing
     const fetchVideoStats = async () => {
-      try {
-        const subCount = await subscriptionApi.count(video.owner._id)
-        setSubscriberCount(subCount.data.data.count)
+      const [subCount, likeCountRes, subStatus, likeStatusRes] = await Promise.allSettled([
+        subscriptionApi.count(video.owner._id),
+        reactionApi.countLikes(video._id, 'Video'),
+        user ? subscriptionApi.status(video.owner._id) : Promise.resolve(null),
+        user ? reactionApi.status(video._id, 'Video') : Promise.resolve(null),
+      ])
 
-        const likeCountRes = await reactionApi.countLikes(video._id, 'Video')
-        setLikeCount(likeCountRes.data.data.likesCount)
-
-        if (user) {
-          const subStatus = await subscriptionApi.status(video.owner._id)
-          setIsSubscribed(subStatus.data.data.isSubscribed)
-
-          const likeStatusRes = await reactionApi.status(video._id, 'Video')
-          const status = likeStatusRes.data.data.status
-          setLikeStatus(
-            status === 'like' ? 'liked'
-              : status === 'dislike' ? 'disliked'
-                : null
-          )
-        }
-      } catch {
-        console.error('Error fetching video stats')
+      if (subCount.status === 'fulfilled') setSubscriberCount(subCount.value.data.data.count)
+      // the API returns { likes }
+      if (likeCountRes.status === 'fulfilled') setLikeCount(likeCountRes.value.data.data.likes ?? 0)
+      if (subStatus.status === 'fulfilled' && subStatus.value) setIsSubscribed(subStatus.value.data.data.isSubscribed)
+      if (likeStatusRes.status === 'fulfilled' && likeStatusRes.value) {
+        const status = likeStatusRes.value.data.data.status
+        setLikeStatus(
+          status === 'like' ? 'liked'
+            : status === 'dislike' ? 'disliked'
+              : null
+        )
+      }
+      if ([subCount, likeCountRes, subStatus, likeStatusRes].some(r => r.status === 'rejected')) {
+        console.error('Error fetching some video stats')
       }
     }
     fetchVideoStats()
