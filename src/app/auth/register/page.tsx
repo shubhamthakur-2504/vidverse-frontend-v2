@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
+import { getApiErrorMessage } from '@/lib/apiErrorMessage'
 
 export default function RegisterPage() {
   const router = useRouter()
@@ -66,9 +67,9 @@ export default function RegisterPage() {
         description: 'You can sign in now.'
       })
       router.replace('/auth/login')
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error('Registration failed', {
-        description: error?.response?.data?.message || error?.message || 'Please try again.'
+        description: getApiErrorMessage(error)
       })
     } finally {
       setIsSubmitting(false)

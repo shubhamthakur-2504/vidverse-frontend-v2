@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { toast } from 'sonner'
+import { getApiErrorMessage } from '@/lib/apiErrorMessage'
 
 function LoginForm() {
   const router = useRouter()
@@ -43,9 +44,9 @@ function LoginForm() {
       await login(identifier.trim(), password)
       toast.success('Welcome back')
       router.replace(redirectTo)
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error('Login failed', {
-        description: error?.response?.data?.message || error?.message || 'Please check your credentials.'
+        description: getApiErrorMessage(error, 'Please check your credentials.')
       })
     } finally {
       setIsSubmitting(false)

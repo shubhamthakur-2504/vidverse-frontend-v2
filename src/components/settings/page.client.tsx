@@ -30,19 +30,7 @@ import { unwrapApiResponse } from '@/lib/unwrapApiRes'
 import { Video as VideoType } from '@/lib/types/videoType'
 import type { ChangeUserInfo } from '@/lib/types/authType'
 import { toast } from 'sonner'
-
-function getErrorMessage(error: unknown) {
-  if (error && typeof error === 'object') {
-    const maybeAxiosError = error as {
-      response?: { data?: { message?: string } }
-      message?: string
-    }
-
-    return maybeAxiosError.response?.data?.message || maybeAxiosError.message || 'Please try again.'
-  }
-
-  return error instanceof Error ? error.message : 'Please try again.'
-}
+import { getApiErrorMessage as getErrorMessage } from '@/lib/apiErrorMessage'
 
 export type SettingsClientUser = {
   avatarUrl?: string
