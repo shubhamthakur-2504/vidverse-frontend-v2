@@ -1,5 +1,5 @@
 import { serverFetch } from "./serverFetch";
-import { ApiSuccess, ApiError } from "@/lib/types/apiType";
+import { ApiSuccess, ApiError, Page } from "@/lib/types/apiType";
 import { Comment } from "@/lib/types/commentType";
 
 export const commentApi = {
@@ -8,6 +8,6 @@ export const commentApi = {
             ? `/videos/getallcomments/${targetId}`
             : `/tweets/getallcomment/${targetId}`;
 
-        return serverFetch<ApiSuccess<Comment[]> | ApiError>(route);
+        return serverFetch<ApiSuccess<Page<Comment>> | ApiError>(route);
     },
 };

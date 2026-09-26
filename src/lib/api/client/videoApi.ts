@@ -22,8 +22,9 @@ const videoApi = {
         return apiClient.get("/videos/getmyvideos");
     },
 
-    getAll: () => {
-        return apiClient.get("/videos/getallvideos");
+    // one page of the public feed; pass the previous page's nextCursor to get the next one
+    getAll: (params: { category?: string; query?: string; cursor?: string; limit?: number } = {}) => {
+        return apiClient.get("/videos/getallvideos", { params });
     },
 
     recordView: (videoId: string) => {

@@ -1,15 +1,42 @@
 "use client"
 
+import { useState } from 'react'
 import { VideoCard } from './VideoCard'
 import { motion } from 'framer-motion'
-import { VideoIcon, Sparkles } from 'lucide-react'
+import { VideoIcon, Sparkles, Loader2 } from 'lucide-react'
 import { Video } from '@/lib/types/videoType'
+import { Page } from '@/lib/types/apiType'
+import videoApi from '@/lib/api/client/videoApi'
+import { getApiErrorMessage } from '@/lib/apiErrorMessage'
+import { toast } from 'sonner'
 
 interface VideoGridProps {
-  videos: Video[]
+  initialVideos: Video[]
+  initialCursor: string | null
+  category?: string
+  query?: string
 }
 
-export function VideoGrid({ videos }: VideoGridProps) {
+export function VideoGrid({ initialVideos, initialCursor, category, query }: VideoGridProps) {
+  const [videos, setVideos] = useState(initialVideos)
+  const [cursor, setCursor] = useState(initialCursor)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
+
+  const loadMore = async () => {
+    if (!cursor || isLoadingMore) return
+    setIsLoadingMore(true)
+    try {
+      const res = await videoApi.getAll({ category, query, cursor })
+      const page: Page<Video> = res.data.data
+      setVideos((current) => [...current, ...page.items])
+      setCursor(page.nextCursor)
+    } catch (error: unknown) {
+      toast.error('Could not load more videos', { description: getApiErrorMessage(error) })
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }
+
   if (!videos || videos.length === 0) {
     return (
       <motion.div
@@ -50,7 +77,6 @@ export function VideoGrid({ videos }: VideoGridProps) {
           </span>
         </div>
         <div className="flex-1 h-px bg-gradient-to-r from-white/[0.06] to-transparent" />
-        <span className="text-xs text-white/25">{videos.length} videos</span>
       </motion.div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-5 gap-y-8">
@@ -58,6 +84,19 @@ export function VideoGrid({ videos }: VideoGridProps) {
           <VideoCard key={video._id} video={video} index={index} />
         ))}
       </div>
+
+      {cursor && (
+        <div className="flex justify-center mt-10">
+          <button
+            onClick={loadMore}
+            disabled={isLoadingMore}
+            className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white/[0.06] border border-white/[0.08] text-sm font-medium text-white/80 hover:text-white hover:bg-white/[0.09] transition-colors disabled:opacity-60"
+          >
+            {isLoadingMore && <Loader2 className="h-4 w-4 animate-spin" />}
+            {isLoadingMore ? 'Loading...' : 'Load more'}
+          </button>
+        </div>
+      )}
     </div>
   )
 }

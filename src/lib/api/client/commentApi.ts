@@ -1,12 +1,13 @@
 import apiClient from "./apiClient";
 
 const commentApi = {
-    all: (targetId: string, targetType: "Video" | "Tweet") => {
+    // one page of comments, newest first; pass the previous page's nextCursor to get the next one
+    all: (targetId: string, targetType: "Video" | "Tweet", cursor?: string) => {
         const route = targetType === "Video"
             ? `/videos/getallcomments/${targetId}`
             : `/tweets/getallcomment/${targetId}`;
 
-        return apiClient.get(route);
+        return apiClient.get(route, { params: cursor ? { cursor } : undefined });
     },
 
     post: (targetId: string, content: string, targetType: "Video" | "Tweet") => {

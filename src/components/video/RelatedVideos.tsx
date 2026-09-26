@@ -17,7 +17,7 @@ export function RelatedVideos({ currentVideoId }: { currentVideoId: string }) {
     setIsLoading(true)
     try {
       const res = await videoApi.getAll()
-      const allVideos: Video[] = res.data?.data || []
+      const allVideos: Video[] = res.data?.data?.items || []
       const related = allVideos.filter(v => v._id !== currentVideoId).slice(0, 12)
       setVideos(related)
     } catch (error) {

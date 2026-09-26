@@ -5,6 +5,7 @@ import { CategoryFilter } from '@/components/home/CategoryFilter'
 import { videoApi } from '@/lib/api/server/videoApi'
 import { unwrapApiResponse } from '@/lib/unwrapApiRes'
 import { Video } from '@/lib/types/videoType'
+import { Page } from '@/lib/types/apiType'
 
 export default async function HomePage({
   searchParams,
@@ -19,9 +20,11 @@ export default async function HomePage({
     videoApi.getCategories(),
   ])
 
-  const videosData: Video[] = videosRes.status === 'fulfilled'
-    ? (unwrapApiResponse<Video[]>(videosRes.value) ?? [])
-    : []
+  // first page only; the grid loads further pages on demand
+  const emptyPage: Page<Video> = { items: [], nextCursor: null }
+  const videosPage: Page<Video> = videosRes.status === 'fulfilled'
+    ? (unwrapApiResponse<Page<Video>>(videosRes.value) ?? emptyPage)
+    : emptyPage
 
   const categories: string[] = categoriesRes.status === 'fulfilled'
     ? (unwrapApiResponse<string[]>(categoriesRes.value) ?? [])
@@ -50,7 +53,14 @@ export default async function HomePage({
       {/* Video grid — SSR data, shows immediately on landing */}
       <div className="container mx-auto px-4 py-8">
         <Suspense fallback={<VideoGridSkeleton />}>
-          <VideoGrid videos={videosData} />
+          {/* keyed by the filters so paging state resets when they change */}
+          <VideoGrid
+            key={`${category ?? ''}|${query ?? ''}`}
+            initialVideos={videosPage.items}
+            initialCursor={videosPage.nextCursor}
+            category={category}
+            query={query}
+          />
         </Suspense>
       </div>
     </div>

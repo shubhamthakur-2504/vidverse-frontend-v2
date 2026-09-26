@@ -12,6 +12,8 @@ import commentApi from '@/lib/api/client/commentApi'
 import reactionApi from '@/lib/api/client/reactionApi'
 import { Comment } from '@/lib/types/commentType'
 import { unwrapApiResponse } from '@/lib/unwrapApiRes'
+import { Page } from '@/lib/types/apiType'
+import { getApiErrorMessage } from '@/lib/apiErrorMessage'
 import { toast } from 'sonner'
 
 export function CommentSection({ targetId, targetType }: { targetId: string, targetType: 'Video' | 'Tweet' }) {
@@ -23,30 +25,54 @@ export function CommentSection({ targetId, targetType }: { targetId: string, tar
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editContent, setEditContent] = useState('')
   const [isFocused, setIsFocused] = useState(false)
+  const [cursor, setCursor] = useState<string | null>(null)
+  const [isLoadingMore, setIsLoadingMore] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
+  // adds the signed-in user's like/dislike state to each comment
+  const withReactionStatus = useCallback(async (items: Comment[]) => {
+    if (user == null) return items
+    for (const comment of items) {
+      try {
+        const res = await reactionApi.status(comment._id, 'Comment')
+        const statusObj = unwrapApiResponse<{ status: 'like' | 'dislike' | 'none' }>(res.data)
+        comment.isLiked = statusObj.status === 'like'
+        comment.isDisliked = statusObj.status === 'dislike'
+      } catch { /* ignore */ }
+    }
+    return items
+  }, [user])
+
+  // (re)loads the first page, newest first
   const fetchComments = useCallback(async () => {
     setIsLoading(true)
     try {
       const response = await commentApi.all(targetId, targetType)
-      const data = unwrapApiResponse<Comment[]>(response.data)
-      if (user != null && Array.isArray(data)) {
-        for (const comment of data) {
-          try {
-            const res = await reactionApi.status(comment._id, 'Comment')
-            const statusObj = unwrapApiResponse<{ status: 'like' | 'dislike' | 'none' }>(res.data)
-            comment.isLiked = statusObj.status === 'like'
-            comment.isDisliked = statusObj.status === 'dislike'
-          } catch { /* ignore */ }
-        }
-      }
-      setComments(data || [])
+      const page = unwrapApiResponse<Page<Comment>>(response.data)
+      setComments(await withReactionStatus(page.items))
+      setCursor(page.nextCursor)
     } catch (error: unknown) {
-      toast.error('Error', { description: error instanceof Error ? error.message : 'Failed to load comments' })
+      toast.error('Error', { description: getApiErrorMessage(error, 'Failed to load comments') })
     } finally {
       setIsLoading(false)
     }
-  }, [targetId, targetType, user])
+  }, [targetId, targetType, withReactionStatus])
+
+  const loadMoreComments = async () => {
+    if (!cursor || isLoadingMore) return
+    setIsLoadingMore(true)
+    try {
+      const response = await commentApi.all(targetId, targetType, cursor)
+      const page = unwrapApiResponse<Page<Comment>>(response.data)
+      const items = await withReactionStatus(page.items)
+      setComments((current) => [...current, ...items])
+      setCursor(page.nextCursor)
+    } catch (error: unknown) {
+      toast.error('Error', { description: getApiErrorMessage(error, 'Failed to load more comments') })
+    } finally {
+      setIsLoadingMore(false)
+    }
+  }
 
   useEffect(() => { fetchComments() }, [fetchComments])
 
@@ -115,7 +141,10 @@ export function CommentSection({ targetId, targetType }: { targetId: string, tar
       <div className="flex items-center gap-3">
         <MessageSquare className="h-5 w-5 text-violet-400" strokeWidth={1.75} />
         <h2 className="text-lg font-bold text-white">
-          {comments.length > 0 ? `${comments.length} Comments` : 'Comments'}
+          {/* the total is unknown until the last page is loaded */}
+          {comments.length > 0
+            ? `${comments.length}${cursor ? '+' : ''} ${comments.length === 1 && !cursor ? 'Comment' : 'Comments'}`
+            : 'Comments'}
         </h2>
       </div>
 
@@ -316,6 +345,16 @@ export function CommentSection({ targetId, targetType }: { targetId: string, tar
           </AnimatePresence>
         )}
       </div>
+
+      {!isLoading && cursor && (
+        <button
+          onClick={loadMoreComments}
+          disabled={isLoadingMore}
+          className="text-sm font-semibold text-violet-400 hover:text-violet-300 transition-colors disabled:opacity-60"
+        >
+          {isLoadingMore ? 'Loading...' : 'Show more comments'}
+        </button>
+      )}
     </motion.div>
   )
 }
