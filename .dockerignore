@@ -2,6 +2,13 @@ node_modules
 .next
 npm-debug.log*
 Dockerfile
-docker-compose.yml
+Dockerfile.dev
+docker-compose*.yml
 .git
 *.log
+*.tsbuildinfo
+# env values are passed as build args / runtime env, never baked from a local file
+.env
+.env.*
+rewrite.js
+ui.patch
