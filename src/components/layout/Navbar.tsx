@@ -6,7 +6,7 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Search, Upload, Bell, History, PlaySquare, User, Settings, LogOut, Clapperboard, X } from 'lucide-react'
+import { Search, Settings, LogOut, Clapperboard, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useRef, useEffect } from 'react'
 
@@ -112,30 +112,7 @@ export function Navbar() {
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {user ? (
             <>
-              {/* Upload */}
-              <Link href="/upload">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 rounded-full hover:bg-white/[0.08] hover:text-violet-400 transition-all duration-200 group"
-                  title="Upload video"
-                >
-                  <Upload className="h-4.5 w-4.5" />
-                </Button>
-              </Link>
-
-              {/* Notifications */}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-9 w-9 rounded-full hover:bg-white/[0.08] hover:text-violet-400 transition-all duration-200 relative"
-                title="Notifications"
-              >
-                <Bell className="h-4.5 w-4.5" />
-                {/* Notification dot */}
-                <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-violet-500 ring-2 ring-[#0a0a0f]" />
-              </Button>
-
+              {/* Upload and notifications return once /studio and notifications exist (roadmap phase 4) */}
               {/* Avatar Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -174,24 +151,6 @@ export function Navbar() {
                   </div>
 
                   <DropdownMenuSeparator className="bg-white/[0.06] -mx-1.5 mb-1" />
-
-                  {[
-                    { href: `/channel/${user?.userName}`, icon: User, label: 'Your Channel' },
-                    { href: '/history', icon: History, label: 'Watch History' },
-                    { href: '/playlists', icon: PlaySquare, label: 'Your Playlists' },
-                  ].map(item => (
-                    <DropdownMenuItem key={item.href} asChild>
-                      <Link
-                        href={item.href}
-                        className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-white/70 hover:text-white hover:bg-white/[0.06] transition-all duration-150 text-sm focus:bg-white/[0.06] focus:text-white"
-                      >
-                        <item.icon className="h-4 w-4 text-white/40" />
-                        {item.label}
-                      </Link>
-                    </DropdownMenuItem>
-                  ))}
-
-                  <DropdownMenuSeparator className="bg-white/[0.06] -mx-1.5 my-1" />
 
                   <DropdownMenuItem asChild>
                     <Link
