@@ -8,7 +8,6 @@ import { motion } from 'framer-motion'
 import { Play, Eye } from 'lucide-react'
 import { useState } from 'react'
 import { VideoSummary } from '@/lib/types/videoType'
-import { useRouter } from 'next/navigation'
 
 interface VideoCardProps {
   video: VideoSummary
@@ -17,7 +16,7 @@ interface VideoCardProps {
 
 export function VideoCard({ video, index = 0 }: VideoCardProps) {
   const [isHovered, setIsHovered] = useState(false)
-  const router = useRouter()
+  const watchHref = `/watch/${video._id}`
 
   return (
     <motion.div
@@ -26,12 +25,17 @@ export function VideoCard({ video, index = 0 }: VideoCardProps) {
       transition={{ delay: index * 0.04, duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
       onHoverStart={() => setIsHovered(true)}
       onHoverEnd={() => setIsHovered(false)}
-      className="group cursor-pointer video-card-hover"
+      // keyboard focus on any link in the card shows the same hover state
+      onFocus={() => setIsHovered(true)}
+      onBlur={() => setIsHovered(false)}
+      className="group video-card-hover"
     >
-      <div className="space-y-3" onClick={() => router.push(`/watch/${video._id}`)}>
+      {/* real links (M13): middle-click, open in new tab, prefetch and keyboard access. Links cannot nest, so the
+          thumbnail and the title each link to the video, and the channel links sit beside them */}
+      <div className="space-y-3">
 
-        {/* Thumbnail */}
-        <div className="relative aspect-video rounded-2xl overflow-hidden bg-[#111118] border border-white/[0.06]">
+        {/* Thumbnail: a pointer target only; the title link below is the keyboard stop */}
+        <Link href={watchHref} tabIndex={-1} aria-hidden className="relative block aspect-video rounded-2xl overflow-hidden bg-[#111118] border border-white/[0.06]">
           <Image
             src={video.thumbnailUrl}
             alt={video.title}
@@ -78,12 +82,11 @@ export function VideoCard({ video, index = 0 }: VideoCardProps) {
             <Eye className="h-3 w-3" />
             {formatViews(video.views)}
           </motion.div>
-        </div>
+        </Link>
 
         {/* Info */}
         <div className="flex gap-3 px-0.5">
-          {/* the card itself opens the video; the channel links stop the click from bubbling */}
-          <Link href={`/channel/${video.owner.userName}`} onClick={(e) => e.stopPropagation()} className="flex-shrink-0" aria-label={`${video.owner.userName} channel`}>
+          <Link href={`/channel/${video.owner.userName}`} className="flex-shrink-0" aria-label={`${video.owner.userName} channel`}>
             <Avatar className="h-8 w-8 ring-1 ring-white/[0.08] group-hover:ring-violet-500/40 transition-all duration-300 flex-shrink-0 mt-0.5">
               <AvatarImage src={video.owner.avatarUrl} alt={video.owner.userName} />
               <AvatarFallback className="bg-gradient-to-br from-violet-600 to-cyan-500 text-white text-xs font-semibold">
@@ -94,11 +97,12 @@ export function VideoCard({ video, index = 0 }: VideoCardProps) {
 
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-sm line-clamp-2 text-white/90 group-hover:text-white transition-colors leading-snug mb-1">
-              {video.title}
+              <Link href={watchHref} className="rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand-fg">
+                {video.title}
+              </Link>
             </h3>
             <Link
               href={`/channel/${video.owner.userName}`}
-              onClick={(e) => e.stopPropagation()}
               className="block w-fit text-xs text-fg-tertiary hover:text-fg-secondary transition-colors mb-0.5"
             >
               {video.owner.userName}
