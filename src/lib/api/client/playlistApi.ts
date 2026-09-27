@@ -2,7 +2,8 @@ import apiClient from "./apiClient";
 
 // the signed-in user's playlists
 const playlistApi = {
-    mine: () => apiClient.get("/playlists"),
+    // with videoId, each playlist carries hasVideo (the "save to playlist" dialog)
+    mine: (videoId?: string) => apiClient.get("/playlists", { params: videoId ? { videoId } : undefined }),
     getById: (playlistId: string) => apiClient.get(`/playlists/${playlistId}`),
     // a playlist starts with one video
     create: (data: { videoId: string; title?: string; description?: string } | FormData) => apiClient.post("/playlists", data),

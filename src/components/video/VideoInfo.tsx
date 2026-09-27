@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { ThumbsUp, ThumbsDown, Share2, Bell, ChevronDown, ChevronUp, Eye, Calendar } from 'lucide-react'
+import { ThumbsUp, ThumbsDown, Share2, Bell, ChevronDown, ChevronUp, Eye, Calendar, ListPlus } from 'lucide-react'
 import { formatViews, formatTimeAgo } from '@/lib/utils'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/components/auth/AuthProvider'
@@ -11,6 +11,7 @@ import reactionApi from '@/lib/api/client/reactionApi'
 import subscriptionApi from '@/lib/api/client/subscriptionApi'
 import { toast } from 'sonner'
 import { WatchVideo } from '@/lib/types/videoType'
+import { SaveToPlaylistDialog } from '@/components/library/SaveToPlaylistDialog'
 
 interface VideoInfoProps {
   video: WatchVideo
@@ -27,6 +28,12 @@ export function VideoInfo({ video }: VideoInfoProps) {
   )
   const [likeCount, setLikeCount] = useState(video.stats.likes)
   const [isSubLoading, setIsSubLoading] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
+
+  const handleSave = () => {
+    if (!user) return toast.error('Login required', { description: 'Please login to save videos' })
+    setIsSaving(true)
+  }
 
   const handleSubscribe = async () => {
     if (!user) return toast.error('Login required', { description: 'Please login to subscribe' })
@@ -189,6 +196,16 @@ export function VideoInfo({ video }: VideoInfoProps) {
             <Share2 className="h-4 w-4" />
             Share
           </button>
+
+          {/* Save to playlist */}
+          <button
+            onClick={handleSave}
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.06] border border-white/[0.08] text-sm font-medium text-white/60 hover:text-white hover:bg-white/[0.09] transition-all"
+          >
+            <ListPlus className="h-4 w-4" />
+            Save
+          </button>
+          {user && <SaveToPlaylistDialog videoId={video._id} open={isSaving} onOpenChange={setIsSaving} />}
 
         </div>
       </div>
