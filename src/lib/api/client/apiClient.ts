@@ -65,6 +65,8 @@ const retryAfterRefresh = (client: AxiosInstance, redirectOnFailure: boolean) =>
         } catch (refreshError) {
             if (redirectOnFailure && !window.location.pathname.startsWith("/auth")) {
                 const currentPath = window.location.pathname + window.location.search
+                // outside React (no router here), and a full load after the session died clears all client state
+                // eslint-disable-next-line @next/next/no-location-assign-relative-destination
                 window.location.href = `/auth/login?redirect=${encodeURIComponent(currentPath)}`
             }
             return Promise.reject(refreshError)
