@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import {
@@ -12,22 +12,16 @@ import {
   PenLine,
   Save,
   Shield,
-  Trash2,
   Upload,
   User,
   Video,
   WandSparkles,
-  X,
 } from 'lucide-react'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import authApi from '@/lib/api/client/authApi'
-import videoApi from '@/lib/api/client/videoApi'
-import { unwrapApiResponse } from '@/lib/unwrapApiRes'
-import { Video as VideoType } from '@/lib/types/videoType'
 import type { ChangeUserInfo } from '@/lib/types/authType'
 import { toast } from 'sonner'
 import { getApiErrorMessage as getErrorMessage } from '@/lib/apiErrorMessage'
@@ -46,7 +40,6 @@ const TABS = [
   { key: 'profile' as const, label: 'Profile', icon: User },
   { key: 'images' as const, label: 'Channel Assets', icon: Camera },
   { key: 'security' as const, label: 'Security', icon: Shield },
-  { key: 'videos' as const, label: 'My Videos', icon: Video },
 ]
 type TabKey = (typeof TABS)[number]['key']
 
@@ -73,22 +66,6 @@ export default function SettingsPageClient({ user: serverUser }: { user?: Settin
   const [showPassword, setShowPassword] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
 
-  // ─── Videos state ───
-  const [videos, setVideos] = useState<VideoType[]>([])
-  const [loadingVideos, setLoadingVideos] = useState(false)
-  const [selectedVideoId, setSelectedVideoId] = useState<string | null>(null)
-  const [videoTitle, setVideoTitle] = useState('')
-  const [videoDescription, setVideoDescription] = useState('')
-  const [videoThumbnail, setVideoThumbnail] = useState<File | null>(null)
-  const [videoThumbnailPreview, setVideoThumbnailPreview] = useState('')
-  const [savingVideo, setSavingVideo] = useState(false)
-  const [togglingVideo, setTogglingVideo] = useState(false)
-  const [deletingVideo, setDeletingVideo] = useState(false)
-
-  const selectedVideo = useMemo(
-    () => videos.find((video) => video._id === selectedVideoId) || null,
-    [videos, selectedVideoId]
-  )
   const avatarSrc = avatarPreview || user?.avatarUrl || ''
   const heroCoverSrc = coverPreview || user?.coverImageUrl || ''
 
@@ -100,40 +77,6 @@ export default function SettingsPageClient({ user: serverUser }: { user?: Settin
     setAvatarPreview(user.avatarUrl || '')
     setCoverPreview(user.coverImageUrl || '')
   }, [user])
-
-  useEffect(() => {
-    if (!user) return
-    const fetchVideos = async () => {
-      try {
-        setLoadingVideos(true)
-        const response = await videoApi.getMine()
-        const data = unwrapApiResponse<VideoType[]>(response.data)
-        setVideos(data)
-        setSelectedVideoId(null)
-      } catch {
-        setVideos([])
-      } finally {
-        setLoadingVideos(false)
-      }
-    }
-
-    void fetchVideos()
-  }, [user])
-
-  useEffect(() => {
-    if (!selectedVideo) {
-      setVideoTitle('')
-      setVideoDescription('')
-      setVideoThumbnail(null)
-      setVideoThumbnailPreview('')
-      return
-    }
-
-    setVideoTitle(selectedVideo.title || '')
-    setVideoDescription(selectedVideo.description || '')
-    setVideoThumbnail(null)
-    setVideoThumbnailPreview('')
-  }, [selectedVideo])
 
   useEffect(() => {
     if (!avatarFile) return
@@ -148,13 +91,6 @@ export default function SettingsPageClient({ user: serverUser }: { user?: Settin
     setCoverPreview(objectUrl)
     return () => URL.revokeObjectURL(objectUrl)
   }, [coverFile])
-
-  useEffect(() => {
-    if (!videoThumbnail) return
-    const objectUrl = URL.createObjectURL(videoThumbnail)
-    setVideoThumbnailPreview(objectUrl)
-    return () => URL.revokeObjectURL(objectUrl)
-  }, [videoThumbnail])
 
   // ─── Handlers ───
   const handleIdentitySave = async () => {
@@ -248,100 +184,10 @@ export default function SettingsPageClient({ user: serverUser }: { user?: Settin
     }
   }
 
-  const handleVideoSave = async () => {
-    if (!selectedVideo) return
-    if (!videoTitle.trim()) {
-      toast.error('Title required', {
-        description: 'Your video needs a title before it can be saved.',
-      })
-      return
-    }
-
-    setSavingVideo(true)
-    try {
-      const payload = videoThumbnail
-        ? (() => {
-            const formData = new FormData()
-            formData.append('title', videoTitle.trim())
-            formData.append('description', videoDescription.trim())
-            formData.append('thumbnail', videoThumbnail)
-            return formData
-          })()
-        : {
-            title: videoTitle.trim(),
-            description: videoDescription.trim(),
-          }
-
-      await videoApi.update(payload, selectedVideo._id)
-      const response = await videoApi.getMine()
-      const data = unwrapApiResponse<VideoType[]>(response.data)
-      setVideos(data)
-      setSelectedVideoId(selectedVideo._id)
-      toast.success('Video saved')
-    } catch (error: unknown) {
-      toast.error('Could not save video', {
-        description: getErrorMessage(error),
-      })
-    } finally {
-      setSavingVideo(false)
-    }
-  }
-
-  const handleTogglePublish = async () => {
-    if (!selectedVideo) return
-
-    setTogglingVideo(true)
-    try {
-      await videoApi.setPublished(selectedVideo._id, !selectedVideo.isPublished)
-      const response = await videoApi.getMine()
-      const data = unwrapApiResponse<VideoType[]>(response.data)
-      setVideos(data)
-      setSelectedVideoId(selectedVideo._id)
-      toast.success(selectedVideo.isPublished ? 'Video hidden from public view' : 'Video published')
-    } catch (error: unknown) {
-      toast.error('Could not update publish state', {
-        description: getErrorMessage(error),
-      })
-    } finally {
-      setTogglingVideo(false)
-    }
-  }
-
-  const handleDeleteVideo = async () => {
-    if (!selectedVideo) return
-
-    const confirmed = window.confirm(
-      `Delete "${selectedVideo.title}"? This action cannot be undone.`
-    )
-    if (!confirmed) return
-
-    setDeletingVideo(true)
-    try {
-      await videoApi.delete(selectedVideo._id)
-      const response = await videoApi.getMine()
-      const data = unwrapApiResponse<VideoType[]>(response.data)
-      setVideos(data)
-      setSelectedVideoId(data[0]?._id || null)
-      toast.success('Video deleted')
-    } catch (error: unknown) {
-      toast.error('Could not delete video', {
-        description: getErrorMessage(error),
-      })
-    } finally {
-      setDeletingVideo(false)
-    }
-  }
-
   const hasIdentityChanges =
     userName.trim() !== (user?.userName || '') || fullName.trim() !== (user?.fullName || '')
   const hasAssetChanges = Boolean(avatarFile || coverFile)
   const hasPasswordChanges = Boolean(currentPassword && newPassword)
-  const hasVideoChanges = Boolean(
-    selectedVideo &&
-      (videoTitle.trim() !== (selectedVideo.title || '') ||
-        videoDescription.trim() !== (selectedVideo.description || '') ||
-        videoThumbnail)
-  )
 
   // ─── Render ───
   return (
@@ -365,6 +211,14 @@ export default function SettingsPageClient({ user: serverUser }: { user?: Settin
             {label}
           </button>
         ))}
+        {/* video management lives in the creator studio */}
+        <Link
+          href="/studio"
+          className="ml-auto flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-white/5 hover:text-white"
+        >
+          <Video className="h-4 w-4" />
+          Manage videos in Studio
+        </Link>
       </nav>
 
       {/* ─── Tab Content ─── */}
@@ -584,206 +438,6 @@ export default function SettingsPageClient({ user: serverUser }: { user?: Settin
                 </Button>
               </div>
             </div>
-          </section>
-        )}
-
-        {/* ─── VIDEOS TAB ─── */}
-        {activeTab === 'videos' && (
-          <section className="animate-in fade-in-0 slide-in-from-bottom-2 duration-300">
-            {/* Header */}
-            <div className="flex items-center gap-3 mb-5">
-              <div className="rounded-xl bg-blue-500/15 p-2.5">
-                <Video className="h-5 w-5 text-blue-400" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold">Your Videos</h2>
-                <p className="text-sm text-muted-foreground">
-                  {videos.length > 0
-                    ? `${videos.length} upload${videos.length > 1 ? 's' : ''} — click a card to edit`
-                    : 'Manage your uploads'}
-                </p>
-              </div>
-            </div>
-
-            {loadingVideos ? (
-              <div className="flex items-center justify-center rounded-2xl border border-white/10 bg-black/30 p-16 text-muted-foreground">
-                <Loader2 className="h-6 w-6 animate-spin" />
-                <span className="ml-2">Loading your videos...</span>
-              </div>
-            ) : videos.length === 0 ? (
-              <div className="rounded-2xl border border-dashed border-white/10 bg-black/30 p-14 text-center">
-                <Video className="mx-auto h-12 w-12 text-muted-foreground" />
-                <p className="mt-4 text-lg font-semibold">No uploads yet</p>
-                <p className="mt-1 text-sm text-muted-foreground">Upload your first video to manage it here.</p>
-                <Button asChild className="mt-5 bg-gradient-to-r from-blue-500 to-purple-500">
-                  <Link href="/"><span>Go to Home</span></Link>
-                </Button>
-              </div>
-            ) : (
-              <>
-                {/* ── Full-width thumbnail grid — always 4 columns ── */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {videos.map((video) => {
-                    const isSelected = selectedVideoId === video._id
-                    return (
-                      <button
-                        key={video._id}
-                        onClick={() => setSelectedVideoId(video._id)}
-                        className={`group relative rounded-2xl overflow-hidden text-left transition-all duration-200 border ${
-                          isSelected
-                            ? 'border-violet-500/70 ring-2 ring-violet-500/30 shadow-xl shadow-violet-500/15'
-                            : 'border-white/10 hover:border-white/30 hover:shadow-lg hover:shadow-black/40'
-                        }`}
-                      >
-                        <div className="relative aspect-video bg-black/40">
-                          <Image
-                            src={video.thumbnailUrl}
-                            alt={video.title}
-                            fill
-                            className="object-cover transition-transform duration-300 group-hover:scale-105"
-                            sizes="320px"
-                          />
-                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/5 to-transparent" />
-                          <span className={`absolute top-2 right-2 rounded-full px-2 py-0.5 text-[10px] font-semibold backdrop-blur-sm ${
-                            video.isPublished ? 'bg-emerald-500/80 text-white' : 'bg-yellow-500/80 text-black'
-                          }`}>
-                            {video.isPublished ? 'Public' : 'Private'}
-                          </span>
-                          <span className="absolute bottom-2 left-2 text-[10px] font-medium text-white/80 bg-black/60 backdrop-blur-sm rounded px-1.5 py-0.5">
-                            {Math.round(video.duration || 0)}s
-                          </span>
-                          {isSelected && (
-                            <div className="absolute inset-0 ring-2 ring-inset ring-violet-500/70 rounded-2xl pointer-events-none" />
-                          )}
-                        </div>
-                        <div className="p-3 bg-black/40">
-                          <p className="text-sm font-semibold line-clamp-2 leading-snug">{video.title}</p>
-                          <p className="mt-1 text-xs text-muted-foreground">{video.views} views</p>
-                        </div>
-                      </button>
-                    )
-                  })}
-                </div>
-
-                {/* ── Centered modal edit panel — only mounts on card click ── */}
-                {selectedVideo && (
-                  <div
-                    className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-                    onClick={(e) => { if (e.target === e.currentTarget) setSelectedVideoId(null) }}
-                  >
-                    <div className="relative w-full max-w-2xl rounded-2xl border border-white/10 bg-[#0f0f17] shadow-2xl shadow-black/60 overflow-hidden animate-in fade-in-0 zoom-in-95 duration-200">
-                      {/* Modal header */}
-                      <div className="flex items-center justify-between gap-3 px-6 py-4 border-b border-white/10">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <PenLine className="h-4 w-4 text-purple-400 shrink-0" />
-                          <p className="font-semibold text-sm truncate">{selectedVideo.title}</p>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => setSelectedVideoId(null)}
-                          className="shrink-0 rounded-lg p-1.5 text-muted-foreground hover:bg-white/10 hover:text-white transition-colors"
-                        >
-                          <X className="h-4 w-4" />
-                        </button>
-                      </div>
-
-                      {/* Modal body */}
-                      <div className="p-6 grid sm:grid-cols-[220px_1fr] gap-5 max-h-[80vh] overflow-y-auto">
-                        {/* Left: thumbnail */}
-                        <div className="space-y-3">
-                          <div className="relative aspect-video overflow-hidden rounded-xl border border-white/10 bg-black/40">
-                            <Image
-                              src={videoThumbnailPreview || selectedVideo.thumbnailUrl}
-                              alt={selectedVideo.title}
-                              fill
-                              className="object-cover"
-                              sizes="220px"
-                            />
-                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent p-2">
-                              <div className="flex items-center justify-between text-[10px] text-white/80">
-                                <span className={`rounded-full px-2 py-0.5 backdrop-blur-sm ${
-                                  selectedVideo.isPublished ? 'bg-emerald-500/30 text-emerald-200' : 'bg-yellow-500/30 text-yellow-200'
-                                }`}>
-                                  {selectedVideo.isPublished ? 'Public' : 'Private'}
-                                </span>
-                                <span>{selectedVideo.views} views</span>
-                              </div>
-                            </div>
-                          </div>
-                          <label className="flex cursor-pointer items-center justify-between rounded-xl border border-dashed border-white/15 bg-white/[0.03] px-3 py-2 transition-all hover:border-white/25 hover:bg-white/[0.06]">
-                            <div>
-                              <p className="font-medium text-xs">Replace Thumbnail</p>
-                              <p className="text-[10px] text-muted-foreground truncate max-w-[120px]">
-                                {videoThumbnail ? videoThumbnail.name : 'Click to upload'}
-                              </p>
-                            </div>
-                            <div className="rounded-full bg-blue-500/15 p-1.5 text-blue-400">
-                              <Upload className="h-3.5 w-3.5" />
-                            </div>
-                            <input type="file" accept="image/*" className="hidden" onChange={(e) => setVideoThumbnail(e.target.files?.[0] ?? null)} />
-                          </label>
-                        </div>
-
-                        {/* Right: fields */}
-                        <div className="space-y-4">
-                          <div className="space-y-1.5">
-                            <label className="text-xs font-medium text-muted-foreground">Title</label>
-                            <Input
-                              value={videoTitle}
-                              onChange={(e) => setVideoTitle(e.target.value)}
-                              placeholder="Video title"
-                              className="text-sm h-9"
-                            />
-                          </div>
-                          <div className="space-y-1.5">
-                            <label className="text-xs font-medium text-muted-foreground">Description</label>
-                            <Textarea
-                              value={videoDescription}
-                              onChange={(e) => setVideoDescription(e.target.value)}
-                              placeholder="What this video is about"
-                              className="min-h-[120px] resize-none text-sm"
-                            />
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Modal footer */}
-                      <div className="flex flex-wrap gap-2 px-6 py-4 border-t border-white/10 bg-white/[0.02]">
-                        <Button
-                          onClick={handleVideoSave}
-                          disabled={savingVideo || !hasVideoChanges}
-                          size="sm"
-                          className="bg-gradient-to-r from-blue-500 to-purple-500"
-                        >
-                          {savingVideo ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Save className="h-3.5 w-3.5" />}
-                          <span>Save Changes</span>
-                        </Button>
-                        <Button
-                          onClick={handleTogglePublish}
-                          disabled={togglingVideo}
-                          size="sm"
-                          variant="outline"
-                          className="border-white/10"
-                        >
-                          {togglingVideo ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Eye className="h-3.5 w-3.5" />}
-                          <span>{selectedVideo.isPublished ? 'Unpublish' : 'Publish'}</span>
-                        </Button>
-                        <Button
-                          onClick={handleDeleteVideo}
-                          disabled={deletingVideo}
-                          size="sm"
-                          variant="destructive"
-                          className="ml-auto"
-                        >
-                          {deletingVideo ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
-                          <span>Delete Video</span>
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </>
-            )}
           </section>
         )}
       </div>
