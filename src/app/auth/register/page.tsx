@@ -45,9 +45,9 @@ export default function RegisterPage() {
       return
     }
 
-    if (!avatar || !cover) {
-      toast.error('Missing images', {
-        description: 'Avatar and cover image are required by the backend.'
+    if (!avatar) {
+      toast.error('Missing avatar', {
+        description: 'Choose an avatar image for your channel.'
       })
       return
     }
@@ -58,7 +58,7 @@ export default function RegisterPage() {
     formData.append('email', email.trim())
     formData.append('password', password)
     formData.append('avatar', avatar)
-    formData.append('cover', cover)
+    if (cover) formData.append('cover', cover)
 
     setIsSubmitting(true)
     try {
@@ -96,7 +96,7 @@ export default function RegisterPage() {
             </span>
           </h1>
           <p className="max-w-xl text-muted-foreground text-lg">
-            Join the platform, upload a channel avatar and cover, and start sharing videos with your audience.
+            Join the platform, pick a channel avatar, and start sharing videos with your audience.
           </p>
         </motion.div>
 
@@ -109,7 +109,7 @@ export default function RegisterPage() {
             <CardHeader className="space-y-3">
               <CardTitle className="text-2xl">Create account</CardTitle>
               <CardDescription>
-                The backend expects both avatar and cover uploads during registration.
+                Choose an avatar now. A cover image is optional and can be added later in settings.
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -188,7 +188,7 @@ export default function RegisterPage() {
                         <Upload className="h-4 w-4" />
                       </div>
                       <div>
-                        <p className="font-medium">Cover image</p>
+                        <p className="font-medium">Cover image (optional)</p>
                         <p className="text-xs text-muted-foreground">Wide banner image</p>
                       </div>
                     </div>

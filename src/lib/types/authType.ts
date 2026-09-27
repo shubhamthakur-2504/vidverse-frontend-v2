@@ -8,7 +8,7 @@ type RegisterForm = {
     username: string;
     fullName: string;
     avatar: File;
-    cover: File;
+    cover?: File;
 }
 
 type ChangePassword = {
