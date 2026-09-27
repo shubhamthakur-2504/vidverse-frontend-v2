@@ -9,7 +9,7 @@ import type { VideoSummary } from '@/lib/types/videoType'
 import type { Page } from '@/lib/types/apiType'
 import { ChannelHeader } from '@/components/channel/ChannelHeader'
 import { ChannelVideos } from '@/components/channel/ChannelVideos'
-import { ChannelPlaylists } from '@/components/channel/ChannelPlaylists'
+import { PlaylistGrid } from '@/components/library/PlaylistGrid'
 
 type ChannelPageProps = {
   params: Promise<{ userName: string }>
@@ -71,7 +71,7 @@ export default async function ChannelPage({ params, searchParams }: ChannelPageP
       <section className="mt-8">
         {tab === 'videos'
           ? <ChannelVideos key={channel.userName} userName={channel.userName} initial={videos} />
-          : <ChannelPlaylists playlists={playlists} />}
+          : <PlaylistGrid playlists={playlists} emptyMessage="This channel has no playlists yet." />}
       </section>
     </div>
   )

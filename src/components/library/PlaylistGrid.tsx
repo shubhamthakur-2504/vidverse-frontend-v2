@@ -2,11 +2,19 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { ListVideo } from 'lucide-react'
 import { formatTimeAgo } from '@/lib/utils'
-import type { ChannelPlaylist } from '@/lib/types/channelType'
 
-export function ChannelPlaylists({ playlists }: { playlists: ChannelPlaylist[] }) {
+type PlaylistCard = {
+  _id: string
+  title: string
+  thumbnailUrl?: string
+  updatedAt: string
+  videoCount: number
+}
+
+// a channel's playlists and "your playlists" share this grid
+export function PlaylistGrid({ playlists, emptyMessage }: { playlists: PlaylistCard[]; emptyMessage: string }) {
   if (playlists.length === 0) {
-    return <p className="py-16 text-center text-sm text-fg-secondary">This channel has no playlists yet.</p>
+    return <p className="py-16 text-center text-sm text-fg-secondary">{emptyMessage}</p>
   }
 
   return (
