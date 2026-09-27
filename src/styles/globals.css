@@ -11,6 +11,26 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* design tokens from docs/UI_DESIGN_GUIDE.md (bg-surface, text-fg-secondary, border-line, bg-brand, ...).
+     New pages use these; existing pages move over in the phase 5 UI overhaul. */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-elevated: var(--elevated);
+  --color-fg: var(--text);
+  --color-fg-secondary: var(--text-secondary);
+  --color-fg-tertiary: var(--text-tertiary);
+  --color-fg-disabled: var(--text-disabled);
+  --color-line: var(--border-subtle);
+  --color-line-default: var(--border-default);
+  --color-line-strong: var(--border-strong);
+  --color-brand: var(--accent-base);
+  --color-brand-hover: var(--accent-hover);
+  --color-brand-fg: var(--accent-fg);
+  --color-brand-subtle: var(--accent-subtle);
+  --color-danger: var(--danger);
+  --color-danger-bg: var(--danger-bg);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-inter), var(--font-geist-sans), system-ui, sans-serif;
@@ -54,6 +74,26 @@
 }
 
 :root {
+  /* UI guide tokens: contrast ratios in docs/UI_DESIGN_GUIDE.md section 3.1 (all text levels pass WCAG AA) */
+  --bg: #0b0b0f;
+  --surface: #131318;
+  --elevated: #1b1b22;
+  --border-subtle: rgb(255 255 255 / 0.06);
+  --border-default: rgb(255 255 255 / 0.10);
+  --border-strong: rgb(255 255 255 / 0.18);
+  --text: #ededf0;
+  --text-secondary: #a1a1aa;
+  --text-tertiary: #8b8b94;
+  --text-disabled: #5c5c66;
+  --accent-base: #7c3aed;
+  --accent-hover: #6d28d9;
+  --accent-fg: #a78bfa;
+  --accent-subtle: rgb(124 58 237 / 0.14);
+  --danger: #f87171;
+  --danger-bg: #dc2626;
+  --success: #4ade80;
+  --warning: #fbbf24;
+
   --radius: 0.75rem;
   --background: #0a0a0f;
   --foreground: #f0f0f8;
@@ -543,4 +583,16 @@
 }
 .no-scrollbar::-webkit-scrollbar {
   display: none;
+}
+
+/* ============================================================
+   REDUCED MOTION (docs/UI_DESIGN_GUIDE.md section 3.7)
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
