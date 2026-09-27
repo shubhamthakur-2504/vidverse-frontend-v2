@@ -1,16 +1,17 @@
 "use client"
 
 import Image from 'next/image'
+import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { formatViews, formatTimeAgo, formatDuration } from '@/lib/utils'
 import { motion } from 'framer-motion'
 import { Play, Eye } from 'lucide-react'
 import { useState } from 'react'
-import { Video } from '@/lib/types/videoType'
+import { VideoSummary } from '@/lib/types/videoType'
 import { useRouter } from 'next/navigation'
 
 interface VideoCardProps {
-  video: Video
+  video: VideoSummary
   index?: number
 }
 
@@ -81,22 +82,27 @@ export function VideoCard({ video, index = 0 }: VideoCardProps) {
 
         {/* Info */}
         <div className="flex gap-3 px-0.5">
-          <div className="flex-shrink-0">
+          {/* the card itself opens the video; the channel links stop the click from bubbling */}
+          <Link href={`/channel/${video.owner.userName}`} onClick={(e) => e.stopPropagation()} className="flex-shrink-0" aria-label={`${video.owner.userName} channel`}>
             <Avatar className="h-8 w-8 ring-1 ring-white/[0.08] group-hover:ring-violet-500/40 transition-all duration-300 flex-shrink-0 mt-0.5">
               <AvatarImage src={video.owner.avatarUrl} alt={video.owner.userName} />
               <AvatarFallback className="bg-gradient-to-br from-violet-600 to-cyan-500 text-white text-xs font-semibold">
                 {video.owner.userName.charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
-          </div>
+          </Link>
 
           <div className="flex-1 min-w-0">
             <h3 className="font-semibold text-sm line-clamp-2 text-white/90 group-hover:text-white transition-colors leading-snug mb-1">
               {video.title}
             </h3>
-            <p className="text-xs text-white/40 mb-0.5">
+            <Link
+              href={`/channel/${video.owner.userName}`}
+              onClick={(e) => e.stopPropagation()}
+              className="block w-fit text-xs text-fg-tertiary hover:text-fg-secondary transition-colors mb-0.5"
+            >
               {video.owner.userName}
-            </p>
+            </Link>
             <div className="flex items-center gap-1.5 text-xs text-white/30">
               <span>{formatViews(video.views)} views</span>
               <span className="w-0.5 h-0.5 rounded-full bg-white/20" />

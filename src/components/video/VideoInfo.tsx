@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from 'react'
+import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { ThumbsUp, ThumbsDown, Share2, Bell, ChevronDown, ChevronUp, Eye, Calendar } from 'lucide-react'
 import { formatViews, formatTimeAgo } from '@/lib/utils'
@@ -122,19 +123,21 @@ export function VideoInfo({ video }: VideoInfoProps) {
 
         {/* Channel info */}
         <div className="flex items-center gap-3">
-          <Avatar className="h-11 w-11 ring-2 ring-white/[0.08]">
-            <AvatarImage src={video.owner.avatarUrl} alt={video.owner.userName} />
-            <AvatarFallback className="bg-gradient-to-br from-violet-600 to-cyan-500 text-white font-semibold">
-              {video.owner.userName.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
+          <Link href={`/channel/${video.owner.userName}`} className="flex items-center gap-3 group/channel">
+            <Avatar className="h-11 w-11 ring-2 ring-white/[0.08]">
+              <AvatarImage src={video.owner.avatarUrl} alt={video.owner.userName} />
+              <AvatarFallback className="bg-gradient-to-br from-violet-600 to-cyan-500 text-white font-semibold">
+                {video.owner.userName.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
 
-          <div>
-            <p className="font-semibold text-white text-sm">
-              {video.owner.userName}
-            </p>
-            <p className="text-xs text-white/35">{formatViews(subscriberCount)} subscribers</p>
-          </div>
+            <div>
+              <p className="font-semibold text-white text-sm group-hover/channel:text-brand-fg transition-colors">
+                {video.owner.userName}
+              </p>
+              <p className="text-xs text-white/35">{formatViews(subscriberCount)} subscribers</p>
+            </div>
+          </Link>
 
           {/* Subscribe button */}
           <motion.button

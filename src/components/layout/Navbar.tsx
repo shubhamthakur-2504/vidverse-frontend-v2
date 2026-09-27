@@ -6,7 +6,7 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Search, Settings, LogOut, Clapperboard, X, Upload, LayoutDashboard } from 'lucide-react'
+import { Search, Settings, LogOut, Clapperboard, X, Upload, LayoutDashboard, UserRound } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useRef, useEffect } from 'react'
 
@@ -161,6 +161,16 @@ export function Navbar() {
                   </div>
 
                   <DropdownMenuSeparator className="bg-white/[0.06] -mx-1.5 mb-1" />
+
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href={`/channel/${user?.userName}`}
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-white/70 hover:text-white hover:bg-white/[0.06] transition-all duration-150 text-sm focus:bg-white/[0.06] focus:text-white"
+                    >
+                      <UserRound className="h-4 w-4 text-white/40" />
+                      Your channel
+                    </Link>
+                  </DropdownMenuItem>
 
                   <DropdownMenuItem asChild>
                     <Link
