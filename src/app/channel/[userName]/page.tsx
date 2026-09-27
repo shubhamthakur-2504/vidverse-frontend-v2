@@ -8,7 +8,7 @@ import type { Channel, ChannelPlaylist } from '@/lib/types/channelType'
 import type { VideoSummary } from '@/lib/types/videoType'
 import type { Page } from '@/lib/types/apiType'
 import { ChannelHeader } from '@/components/channel/ChannelHeader'
-import { ChannelVideos } from '@/components/channel/ChannelVideos'
+import { PagedVideoGrid } from '@/components/video/PagedVideoGrid'
 import { PlaylistGrid } from '@/components/library/PlaylistGrid'
 
 type ChannelPageProps = {
@@ -70,7 +70,7 @@ export default async function ChannelPage({ params, searchParams }: ChannelPageP
 
       <section className="mt-8">
         {tab === 'videos'
-          ? <ChannelVideos key={channel.userName} userName={channel.userName} initial={videos} />
+          ? <PagedVideoGrid key={channel.userName} source={{ kind: 'channel', userName: channel.userName }} initial={videos} emptyMessage="This channel has no public videos yet." />
           : <PlaylistGrid playlists={playlists} emptyMessage="This channel has no playlists yet." />}
       </section>
     </div>

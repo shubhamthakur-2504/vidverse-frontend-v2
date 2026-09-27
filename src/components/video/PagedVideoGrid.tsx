@@ -10,7 +10,14 @@ import type { VideoSummary } from '@/lib/types/videoType'
 import type { Page } from '@/lib/types/apiType'
 import { buttonSecondary } from '@/components/studio/styles'
 
-export function ChannelVideos({ userName, initial }: { userName: string; initial: Page<VideoSummary> }) {
+// which list the next pages come from (functions cannot be passed from server components, so this names it)
+export type VideoSource = { kind: 'channel'; userName: string }
+
+const fetchPage = (source: VideoSource, cursor: string) =>
+  subscriptionApi.channelVideos(source.userName, cursor)
+
+// a server-rendered first page of video cards, with "Load more" for the rest
+export function PagedVideoGrid({ source, initial, emptyMessage }: { source: VideoSource; initial: Page<VideoSummary>; emptyMessage: React.ReactNode }) {
   const [videos, setVideos] = useState(initial.items)
   const [cursor, setCursor] = useState(initial.nextCursor)
   const [loading, setLoading] = useState(false)
@@ -19,7 +26,7 @@ export function ChannelVideos({ userName, initial }: { userName: string; initial
     if (!cursor || loading) return
     setLoading(true)
     try {
-      const page: Page<VideoSummary> = (await subscriptionApi.channelVideos(userName, cursor)).data.data
+      const page: Page<VideoSummary> = (await fetchPage(source, cursor)).data.data
       setVideos((current) => [...current, ...page.items])
       setCursor(page.nextCursor)
     } catch (error: unknown) {
@@ -30,7 +37,7 @@ export function ChannelVideos({ userName, initial }: { userName: string; initial
   }
 
   if (videos.length === 0) {
-    return <p className="py-16 text-center text-sm text-fg-secondary">This channel has no public videos yet.</p>
+    return <div className="py-16 text-center text-sm text-fg-secondary">{emptyMessage}</div>
   }
 
   return (
