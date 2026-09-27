@@ -33,7 +33,7 @@ const TABS = [
 export async function generateMetadata({ params }: ChannelPageProps): Promise<Metadata> {
   const { userName } = await params
   const channel = await loadChannel(decodeURIComponent(userName))
-  return { title: channel ? `${channel.fullName} (@${channel.userName}) | VidVerse` : 'Channel not found | VidVerse' }
+  return { title: channel ? `${channel.fullName} (@${channel.userName}) · VidVerse` : 'Channel not found · VidVerse' }
 }
 
 export default async function ChannelPage({ params, searchParams }: ChannelPageProps) {
