@@ -5,7 +5,7 @@ import { apiOrigin, API_PREFIX } from '@/lib/api/origin'
 // 1. refreshes an expired session before server components render, so pages render as the signed-in user
 // 2. sends visitors without a session away from pages that need one
 
-const PROTECTED_PREFIXES = ['/settings']
+const PROTECTED_PREFIXES = ['/settings', '/studio']
 // refresh a little early so the token does not expire halfway through rendering
 const EXPIRY_MARGIN_SECONDS = 30
 

@@ -6,6 +6,10 @@ const videoApi = {
     setPublished: (videoId: string, isPublished: boolean) => apiClient.patch(`/videos/${videoId}`, { isPublished }),
     delete: (videoId: string) => apiClient.delete(`/videos/${videoId}`),
     getMine: () => apiClient.get("/me/videos"),
+    // creator studio: overview with totals, one own video in any status, retry failed processing
+    studio: () => apiClient.get("/me/studio"),
+    getMyVideo: (videoId: string) => apiClient.get(`/me/videos/${videoId}`),
+    reprocess: (videoId: string) => apiClient.post(`/videos/${videoId}/reprocess`),
 
     // one page of the public feed; pass the previous page's nextCursor to get the next one
     getAll: (params: { category?: string; query?: string; cursor?: string; limit?: number } = {}) =>

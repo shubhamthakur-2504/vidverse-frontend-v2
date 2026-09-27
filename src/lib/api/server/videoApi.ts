@@ -1,4 +1,5 @@
 import { Video, WatchVideo } from "@/lib/types/videoType";
+import { StudioOverview, StudioVideo } from "@/lib/types/studioType";
 import { serverFetch } from "./serverFetch";
 import { ApiSuccess, ApiError, Page } from "@/lib/types/apiType";
 
@@ -19,5 +20,15 @@ export const videoApi = {
     },
     getCategories: () => {
         return serverFetch<ApiSuccess<string[]> | ApiError>("/videos/categories");
+    },
+    // every allowed category (upload / edit forms)
+    getAllCategories: () => {
+        return serverFetch<ApiSuccess<string[]> | ApiError>("/videos/categories?all=true");
+    },
+    getStudio: () => {
+        return serverFetch<ApiSuccess<StudioOverview> | ApiError>("/me/studio");
+    },
+    getMyVideo: (videoId: string) => {
+        return serverFetch<ApiSuccess<StudioVideo> | ApiError>(`/me/videos/${videoId}`);
     },
 };

@@ -6,7 +6,7 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Search, Settings, LogOut, Clapperboard, X } from 'lucide-react'
+import { Search, Settings, LogOut, Clapperboard, X, Upload, LayoutDashboard } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useRef, useEffect } from 'react'
 
@@ -112,7 +112,17 @@ export function Navbar() {
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {user ? (
             <>
-              {/* Upload and notifications return once /studio and notifications exist (roadmap phase 4) */}
+              {/* Create: upload a video in the studio (notifications return with roadmap phase 4 step 7) */}
+              <Link
+                href="/studio/upload"
+                className="hidden h-9 items-center gap-2 rounded-full border border-line-default px-4 text-sm font-medium text-fg transition-colors hover:border-line-strong sm:inline-flex"
+              >
+                <Upload className="h-4 w-4" aria-hidden />
+                Create
+              </Link>
+              <Link href="/studio/upload" aria-label="Upload a video" className="inline-flex h-9 w-9 items-center justify-center rounded-full text-fg transition-colors hover:bg-elevated sm:hidden">
+                <Upload className="h-4 w-4" aria-hidden />
+              </Link>
               {/* Avatar Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
@@ -151,6 +161,16 @@ export function Navbar() {
                   </div>
 
                   <DropdownMenuSeparator className="bg-white/[0.06] -mx-1.5 mb-1" />
+
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href="/studio"
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-white/70 hover:text-white hover:bg-white/[0.06] transition-all duration-150 text-sm focus:bg-white/[0.06] focus:text-white"
+                    >
+                      <LayoutDashboard className="h-4 w-4 text-white/40" />
+                      Studio
+                    </Link>
+                  </DropdownMenuItem>
 
                   <DropdownMenuItem asChild>
                     <Link

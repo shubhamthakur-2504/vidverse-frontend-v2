@@ -1,6 +1,6 @@
 import videoApi from '@/lib/api/client/videoApi'
 import { unwrapApiResponse } from '@/lib/unwrapApiRes'
-import { Video } from '@/lib/types/videoType'
+import type { StudioVideo } from '@/lib/types/studioType'
 
 // Browser -> Cloudinary upload of the original file (it never passes through our API), then registration.
 // Our API signs the upload, and after registration our ffmpeg worker builds the adaptive HLS ladder.
@@ -42,7 +42,8 @@ const sendChunk = (url: string, form: FormData, headers: Record<string, string>,
     xhr.send(form)
   })
 
-export async function uploadVideoDirect(file: File, details: VideoDetails, { onProgress, signal }: UploadOptions = {}): Promise<Video> {
+// resolves with the registered video (status "processing" until the worker has built the HLS ladder)
+export async function uploadVideoDirect(file: File, details: VideoDetails, { onProgress, signal }: UploadOptions = {}): Promise<StudioVideo> {
   const intent = unwrapApiResponse<UploadIntent>((await videoApi.uploadIntent()).data)
   if (file.size > intent.maxBytes) {
     throw new Error(`This video is larger than the ${Math.round(intent.maxBytes / 1024 / 1024)} MB upload limit`)
@@ -73,5 +74,5 @@ export async function uploadVideoDirect(file: File, details: VideoDetails, { onP
   if (details.description) form.append('description', details.description)
   if (details.category) form.append('category', details.category)
   if (details.thumbnail) form.append('thumbnail', details.thumbnail)
-  return unwrapApiResponse<Video>((await videoApi.registerUpload(form)).data)
+  return unwrapApiResponse<StudioVideo>((await videoApi.registerUpload(form)).data)
 }
