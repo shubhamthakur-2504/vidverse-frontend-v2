@@ -5,11 +5,14 @@ import { apiOrigin, API_PREFIX } from '@/lib/api/origin'
 // 1. refreshes an expired session before server components render, so pages render as the signed-in user
 // 2. sends visitors without a session away from pages that need one
 
-const PROTECTED_PREFIXES = ['/settings', '/studio']
+const PROTECTED_PREFIXES = ['/settings', '/studio', '/history']
+// /playlists lists your own playlists, but /playlists/:id is a public page
+const PROTECTED_PATHS = ['/playlists']
 // refresh a little early so the token does not expire halfway through rendering
 const EXPIRY_MARGIN_SECONDS = 30
 
-const isProtected = (pathname: string) => PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
+const isProtected = (pathname: string) =>
+  PROTECTED_PATHS.includes(pathname) || PROTECTED_PREFIXES.some((p) => pathname === p || pathname.startsWith(`${p}/`))
 
 // reads exp from a JWT without verifying it (the API verifies; this only decides whether to refresh)
 const secondsLeft = (token: string | undefined): number => {
