@@ -6,7 +6,7 @@ import { useAuth } from '@/components/auth/AuthProvider'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Search, Settings, LogOut, Clapperboard, X, Upload, LayoutDashboard, UserRound, History, ListVideo } from 'lucide-react'
+import { Search, Settings, LogOut, Clapperboard, X, Upload, LayoutDashboard, UserRound, History, ListVideo, Rss } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useRef, useEffect } from 'react'
 
@@ -179,6 +179,16 @@ export function Navbar() {
                     >
                       <LayoutDashboard className="h-4 w-4 text-white/40" />
                       Studio
+                    </Link>
+                  </DropdownMenuItem>
+
+                  <DropdownMenuItem asChild>
+                    <Link
+                      href="/subscriptions"
+                      className="flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer text-white/70 hover:text-white hover:bg-white/[0.06] transition-all duration-150 text-sm focus:bg-white/[0.06] focus:text-white"
+                    >
+                      <Rss className="h-4 w-4 text-white/40" />
+                      Subscriptions
                     </Link>
                   </DropdownMenuItem>
 

@@ -21,3 +21,10 @@ export interface ChannelPlaylist {
   updatedAt: string
   videoCount: number
 }
+
+// GET /v2/me/subscriptions: one followed channel, most recently followed first
+export interface SubscriptionItem {
+  _id: string
+  createdAt: string
+  channel: { _id: string; userName: string; fullName: string; avatarUrl: string }
+}

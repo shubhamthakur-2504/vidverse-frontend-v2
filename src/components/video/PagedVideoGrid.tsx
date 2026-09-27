@@ -11,10 +11,10 @@ import type { Page } from '@/lib/types/apiType'
 import { buttonSecondary } from '@/components/studio/styles'
 
 // which list the next pages come from (functions cannot be passed from server components, so this names it)
-export type VideoSource = { kind: 'channel'; userName: string }
+export type VideoSource = { kind: 'channel'; userName: string } | { kind: 'subscriptions' }
 
 const fetchPage = (source: VideoSource, cursor: string) =>
-  subscriptionApi.channelVideos(source.userName, cursor)
+  source.kind === 'channel' ? subscriptionApi.channelVideos(source.userName, cursor) : subscriptionApi.feed(cursor)
 
 // a server-rendered first page of video cards, with "Load more" for the rest
 export function PagedVideoGrid({ source, initial, emptyMessage }: { source: VideoSource; initial: Page<VideoSummary>; emptyMessage: React.ReactNode }) {
