@@ -41,6 +41,8 @@ export interface Video {
   }
 }
 
+// what a video card needs; channel lists return this subset
+export type VideoSummary = Pick<Video, '_id' | 'title' | 'thumbnailUrl' | 'duration' | 'views' | 'createdAt' | 'owner'>
 
 // GET /v2/videos/:id: the video with counts and the viewer's own state, for the watch page
 export interface WatchVideo extends Omit<Video, 'owner'> {
