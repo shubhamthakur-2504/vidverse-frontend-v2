@@ -1,5 +1,6 @@
 import apiClient from "./apiClient";
 import { UpdateVideoPayload } from "@/lib/types/videoType";
+import { SearchFilters, searchApiParams } from "@/lib/search";
 
 const videoApi = {
     update: (data: UpdateVideoPayload | FormData, videoId: string) => apiClient.patch(`/videos/${videoId}`, data),
@@ -14,6 +15,9 @@ const videoApi = {
     // one page of the public feed; pass the previous page's nextCursor to get the next one
     getAll: (params: { category?: string; query?: string; cursor?: string; limit?: number } = {}) =>
         apiClient.get("/videos", { params }),
+    // one page of search results with the /results filters
+    search: (filters: SearchFilters, cursor?: string) =>
+        apiClient.get("/videos", { params: { ...searchApiParams(filters), ...(cursor && { cursor }) } }),
 
     related: (videoId: string, limit = 12) => apiClient.get(`/videos/${videoId}/related`, { params: { limit } }),
 

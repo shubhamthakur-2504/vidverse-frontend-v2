@@ -1,4 +1,5 @@
-import { Video, WatchVideo } from "@/lib/types/videoType";
+import { Video, VideoSummary, WatchVideo } from "@/lib/types/videoType";
+import { SearchFilters, searchApiParams } from "@/lib/search";
 import { StudioOverview, StudioVideo } from "@/lib/types/studioType";
 import { serverFetch } from "./serverFetch";
 import { ApiSuccess, ApiError, Page } from "@/lib/types/apiType";
@@ -10,6 +11,11 @@ export const videoApi = {
         if (query) params.set("query", query);
         const queryString = params.toString() ? `?${params.toString()}` : "";
         return serverFetch<ApiSuccess<Page<Video>> | ApiError>(`/videos${queryString}`);
+    },
+    // first page of search results
+    search: (filters: SearchFilters) => {
+        const params = new URLSearchParams(searchApiParams(filters));
+        return serverFetch<ApiSuccess<Page<VideoSummary>> | ApiError>(`/videos?${params.toString()}`);
     },
     // the watch-page payload: video, owner, counts and the viewer's own state (from the forwarded cookies)
     getVideoDetails: (videoId: string) => {

@@ -1,4 +1,5 @@
 import { Suspense } from 'react'
+import { redirect } from 'next/navigation'
 import { VideoGrid } from '@/components/video/VideoGrid'
 import { VideoGridSkeleton } from '@/components/video/VideoGridSkeleton'
 import { CategoryFilter } from '@/components/home/CategoryFilter'
@@ -6,6 +7,7 @@ import { videoApi } from '@/lib/api/server/videoApi'
 import { unwrapApiResponse } from '@/lib/unwrapApiRes'
 import { Video } from '@/lib/types/videoType'
 import { Page } from '@/lib/types/apiType'
+import { resultsHref } from '@/lib/search'
 
 export default async function HomePage({
   searchParams,
@@ -13,10 +15,12 @@ export default async function HomePage({
   searchParams: Promise<{ category?: string; query?: string }>
 }) {
   const { category, query } = await searchParams
+  // search used to live here as /?query=: keep old links working
+  if (query?.trim()) redirect(resultsHref({ q: query.trim() }))
 
   // Fetch videos and categories in parallel — both SSR, no client waterfall
   const [videosRes, categoriesRes] = await Promise.allSettled([
-    videoApi.getAllVideos(category, query),
+    videoApi.getAllVideos(category),
     videoApi.getCategories(),
   ])
 
@@ -53,13 +57,12 @@ export default async function HomePage({
       {/* Video grid — SSR data, shows immediately on landing */}
       <div className="container mx-auto px-4 py-8">
         <Suspense fallback={<VideoGridSkeleton />}>
-          {/* keyed by the filters so paging state resets when they change */}
+          {/* keyed by the category so paging state resets when it changes */}
           <VideoGrid
-            key={`${category ?? ''}|${query ?? ''}`}
+            key={category ?? ''}
             initialVideos={videosPage.items}
             initialCursor={videosPage.nextCursor}
             category={category}
-            query={query}
           />
         </Suspense>
       </div>

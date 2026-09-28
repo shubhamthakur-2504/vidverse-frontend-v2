@@ -14,10 +14,9 @@ interface VideoGridProps {
   initialVideos: Video[]
   initialCursor: string | null
   category?: string
-  query?: string
 }
 
-export function VideoGrid({ initialVideos, initialCursor, category, query }: VideoGridProps) {
+export function VideoGrid({ initialVideos, initialCursor, category }: VideoGridProps) {
   const [videos, setVideos] = useState(initialVideos)
   const [cursor, setCursor] = useState(initialCursor)
   const [isLoadingMore, setIsLoadingMore] = useState(false)
@@ -26,7 +25,7 @@ export function VideoGrid({ initialVideos, initialCursor, category, query }: Vid
     if (!cursor || isLoadingMore) return
     setIsLoadingMore(true)
     try {
-      const res = await videoApi.getAll({ category, query, cursor })
+      const res = await videoApi.getAll({ category, cursor })
       const page: Page<Video> = res.data.data
       setVideos((current) => [...current, ...page.items])
       setCursor(page.nextCursor)

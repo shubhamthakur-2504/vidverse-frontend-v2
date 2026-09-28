@@ -1,14 +1,26 @@
 "use client"
 
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/auth/AuthProvider'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Search, Settings, LogOut, Clapperboard, X, Upload, LayoutDashboard, UserRound, History, ListVideo, Rss } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, Suspense } from 'react'
+import { MAX_QUERY_LENGTH, resultsHref } from '@/lib/search'
+
+// shows the current search in the box on /results and empties it elsewhere
+// (useSearchParams needs its own Suspense boundary so it doesn't opt every page out of static rendering)
+function SyncSearchValue({ onChange }: { onChange: (value: string) => void }) {
+  const pathname = usePathname()
+  const q = useSearchParams().get('q')
+  useEffect(() => {
+    onChange(pathname === '/results' ? (q ?? '') : '')
+  }, [pathname, q, onChange])
+  return null
+}
 
 export function Navbar() {
   const router = useRouter()
@@ -27,7 +39,9 @@ export function Navbar() {
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (searchValue.trim()) {
-      router.push(`/?query=${encodeURIComponent(searchValue.trim())}`)
+      // a new search starts without filters
+      router.push(resultsHref({ q: searchValue.trim() }))
+      searchRef.current?.blur()
     } else {
       router.push('/')
     }
@@ -72,7 +86,10 @@ export function Navbar() {
           animate={{ scale: isSearchFocused ? 1.01 : 1 }}
           transition={{ duration: 0.2 }}
         >
-          <form onSubmit={handleSearchSubmit} className={`relative transition-all duration-300 ${isSearchFocused
+          <Suspense fallback={null}>
+            <SyncSearchValue onChange={setSearchValue} />
+          </Suspense>
+          <form role="search" onSubmit={handleSearchSubmit} className={`relative transition-all duration-300 ${isSearchFocused
               ? 'ring-1 ring-violet-500/60 rounded-full shadow-lg shadow-violet-500/10'
               : ''
             }`}>
@@ -81,9 +98,12 @@ export function Navbar() {
             <input
               ref={searchRef}
               type="text"
+              aria-label="Search videos"
+              enterKeyHint="search"
+              maxLength={MAX_QUERY_LENGTH}
               value={searchValue}
               onChange={e => setSearchValue(e.target.value)}
-              placeholder="Search videos, channels..."
+              placeholder="Search videos"
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setIsSearchFocused(false)}
               className="w-full pl-11 pr-10 py-2.5 bg-white/[0.06] border border-white/[0.08] rounded-full
@@ -98,7 +118,8 @@ export function Navbar() {
                   initial={{ opacity: 0, scale: 0.7 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.7 }}
-                  onClick={() => setSearchValue('')}
+                  onClick={() => { setSearchValue(''); searchRef.current?.focus() }}
+                  aria-label="Clear search"
                   className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-white/10 transition-colors"
                 >
                   <X className="h-3.5 w-3.5 text-white/50" />
