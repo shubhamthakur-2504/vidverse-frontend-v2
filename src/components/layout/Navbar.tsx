@@ -80,6 +80,11 @@ export function Navbar() {
           </span>
         </Link>
 
+        {/* public sections that are not in the account menu */}
+        <Link href="/community" className="hidden text-sm font-medium text-fg-secondary transition-colors hover:text-fg md:block">
+          Community
+        </Link>
+
         {/* Search Bar */}
         <motion.div
           className="flex-1 max-w-xl"
