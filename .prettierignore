@@ -3,3 +3,8 @@ node_modules
 build
 out
 .env
+package-lock.json
+next-env.d.ts
+# written by `next dev`, never committed
+AGENTS.md
+CLAUDE.md
