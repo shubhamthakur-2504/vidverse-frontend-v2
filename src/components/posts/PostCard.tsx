@@ -24,10 +24,15 @@ const recount = (post: Pick<Post, 'likeCount' | 'dislikeCount'>, from: Reaction,
   dislikeCount: post.dislikeCount - (from === 'dislike' ? 1 : 0) + (to === 'dislike' ? 1 : 0),
 })
 
-export function PostCard({ post: initial, onDeleted }: { post: Post; onDeleted: (postId: string) => void }) {
+export function PostCard({ post: initial, onDeleted, defaultShowComments = false }: {
+  post: Post
+  onDeleted: (postId: string) => void
+  // the single-post page opens the comments straight away
+  defaultShowComments?: boolean
+}) {
   const { user } = useAuth()
   const [post, setPost] = useState(initial)
-  const [showComments, setShowComments] = useState(false)
+  const [showComments, setShowComments] = useState(defaultShowComments)
   const [editing, setEditing] = useState(false)
   const [draft, setDraft] = useState(initial.content)
   const [saving, setSaving] = useState(false)
