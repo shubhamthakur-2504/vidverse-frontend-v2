@@ -11,6 +11,8 @@ interface User {
   fullName: string
   avatarUrl?: string
   coverImageUrl?: string
+  // null until the owner opens the emailed verification link
+  emailVerifiedAt?: string | null
 }
 
 interface AuthContextType {

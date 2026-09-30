@@ -1,225 +1,206 @@
 "use client"
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { motion } from 'framer-motion'
-import { ArrowRight, Eye, EyeOff, FileImage, Lock, Mail, Sparkles, Upload, User } from 'lucide-react'
-import authApi from '@/lib/api/client/authApi'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
+import { ArrowLeft, Check, ImagePlus, Loader2, X } from 'lucide-react'
 import { toast } from 'sonner'
+import { useAuth } from '@/components/auth/AuthProvider'
+import { AuthCard, FormError } from '@/components/auth/AuthCard'
+import { PasswordField } from '@/components/auth/PasswordField'
+import authApi from '@/lib/api/client/authApi'
 import { getApiErrorMessage } from '@/lib/apiErrorMessage'
+import { buttonGhost, buttonPrimary, buttonSecondary, fieldInput, fieldLabel } from '@/components/studio/styles'
+
+const USERNAME_PATTERN = /^[a-z0-9._-]{3,30}$/
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const IMAGE_TYPES = 'image/jpeg,image/png,image/webp'
+
+type Availability = 'idle' | 'checking' | 'available' | 'taken' | 'invalid'
+
+// object URL for a picked image, revoked when it changes or the component unmounts
+function usePreview(file: File | null) {
+  const url = useMemo(() => (file ? URL.createObjectURL(file) : null), [file])
+  useEffect(() => () => { if (url) URL.revokeObjectURL(url) }, [url])
+  return url
+}
 
 export default function RegisterPage() {
   const router = useRouter()
+  const { user, loading, login } = useAuth()
+  const [step, setStep] = useState<1 | 2>(1)
   const [fullName, setFullName] = useState('')
   const [userName, setUserName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [showPassword, setShowPassword] = useState(false)
+  // the result of the last availability check, for the exact username it was made for
+  const [checked, setChecked] = useState<{ handle: string; result: 'available' | 'taken' | 'error' } | null>(null)
   const [avatar, setAvatar] = useState<File | null>(null)
   const [cover, setCover] = useState<File | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const avatarPreview = usePreview(avatar)
+  const coverPreview = usePreview(cover)
+
+  const handle = userName.trim().toLowerCase()
 
   useEffect(() => {
-    const handleDrop = (event: DragEvent) => {
-      event.preventDefault()
-    }
-    window.addEventListener('dragover', handleDrop)
-    window.addEventListener('drop', handleDrop)
-    return () => {
-      window.removeEventListener('dragover', handleDrop)
-      window.removeEventListener('drop', handleDrop)
-    }
-  }, [])
+    if (!loading && user && !isSubmitting) router.replace('/')
+  }, [loading, user, isSubmitting, router])
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  // live availability check, debounced while typing
+  useEffect(() => {
+    if (!USERNAME_PATTERN.test(handle)) return
+    let cancelled = false
+    const timer = setTimeout(async () => {
+      try {
+        const { data } = await authApi.checkUserName(handle)
+        if (!cancelled) setChecked({ handle, result: data.data.available ? 'available' : 'taken' })
+      } catch {
+        // the server check at submit still catches a clash
+        if (!cancelled) setChecked({ handle, result: 'error' })
+      }
+    }, 400)
+    return () => { cancelled = true; clearTimeout(timer) }
+  }, [handle])
+
+  const userNameStatus: Availability =
+    !handle ? 'idle'
+      : !USERNAME_PATTERN.test(handle) ? 'invalid'
+      : checked?.handle !== handle ? 'checking'
+      : checked.result === 'error' ? 'idle'
+      : checked.result
+
+  const goToStep2 = (event: React.FormEvent) => {
     event.preventDefault()
+    if (!fullName.trim()) return setError('Enter your name.')
+    if (userNameStatus === 'invalid') return setError('Usernames are 3–30 characters: letters, numbers, dots, dashes and underscores.')
+    if (userNameStatus === 'taken') return setError('That username is taken. Try another one.')
+    if (!EMAIL_PATTERN.test(email.trim())) return setError('Enter a valid email address.')
+    if (password.length < 8) return setError('Use at least 8 characters for your password.')
+    setError(null)
+    setStep(2)
+  }
 
-    if (!fullName.trim() || !userName.trim() || !email.trim() || !password.trim()) {
-      toast.error('Missing fields', {
-        description: 'Fill in your name, username, email, and password.'
-      })
-      return
-    }
-
-    if (!avatar) {
-      toast.error('Missing avatar', {
-        description: 'Choose an avatar image for your channel.'
-      })
-      return
-    }
-
-    const formData = new FormData()
-    formData.append('fullName', fullName.trim())
-    formData.append('userName', userName.trim())
-    formData.append('email', email.trim())
-    formData.append('password', password)
-    formData.append('avatar', avatar)
-    if (cover) formData.append('cover', cover)
-
+  const createAccount = async (event: React.FormEvent) => {
+    event.preventDefault()
+    if (!avatar) return setError('Choose an avatar for your channel.')
+    setError(null)
     setIsSubmitting(true)
+    const form = new FormData()
+    form.append('fullName', fullName.trim())
+    form.append('userName', handle)
+    form.append('email', email.trim())
+    form.append('password', password)
+    form.append('avatar', avatar)
+    if (cover) form.append('cover', cover)
     try {
-      await authApi.register(formData)
-      toast.success('Account created', {
-        description: 'You can sign in now.'
-      })
-      router.replace('/auth/login')
-    } catch (error: unknown) {
-      toast.error('Registration failed', {
-        description: getApiErrorMessage(error)
-      })
-    } finally {
+      await authApi.register(form)
+    } catch (err: unknown) {
+      setError(getApiErrorMessage(err, "Couldn't create your account. Try again."))
       setIsSubmitting(false)
+      return
+    }
+    // signed in straight away: no detour through the login form
+    try {
+      await login(handle, password)
+      toast.success('Welcome to VidVerse', { description: `We sent a link to ${email.trim()} to confirm your email.` })
+      router.replace('/')
+    } catch {
+      router.replace('/auth/login')
     }
   }
 
   return (
-    <div className="min-h-screen pt-16 flex items-center justify-center px-4 relative overflow-hidden">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_35%),radial-gradient(circle_at_bottom_right,rgba(168,85,247,0.18),transparent_35%)]" />
-      <div className="relative w-full max-w-5xl grid lg:grid-cols-[0.8fr_1.2fr] gap-6 items-center">
-        <motion.div
-          initial={{ opacity: 0, x: -24 }}
-          animate={{ opacity: 1, x: 0 }}
-          className="hidden lg:block space-y-6 p-8"
-        >
-          <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm text-muted-foreground">
-            <Sparkles className="h-4 w-4 text-purple-400" />
-            Build your channel identity
+    <AuthCard
+      title="Create your account"
+      description={<span aria-live="polite">Step {step} of 2</span>}
+      footer={<>Already have an account? <Link href="/auth/login" className="font-medium text-brand-fg hover:underline">Sign in</Link></>}
+    >
+      {step === 1 ? (
+        <form onSubmit={goToStep2} className="space-y-4" noValidate>
+          <div>
+            <label htmlFor="fullName" className={fieldLabel}>Name</label>
+            <input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} autoComplete="name" autoFocus maxLength={80} className={`${fieldInput} h-10`} />
           </div>
-          <h1 className="text-5xl font-black tracking-tight">
-            Create your
-            <span className="block bg-linear-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-              VidVerse account
-            </span>
-          </h1>
-          <p className="max-w-xl text-muted-foreground text-lg">
-            Join the platform, pick a channel avatar, and start sharing videos with your audience.
-          </p>
-        </motion.div>
+          <div>
+            <label htmlFor="userName" className={fieldLabel}>Username</label>
+            <div className="relative">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-fg-tertiary">@</span>
+              <input
+                id="userName"
+                value={userName}
+                onChange={(e) => setUserName(e.target.value)}
+                autoComplete="username"
+                autoCapitalize="none"
+                spellCheck={false}
+                maxLength={30}
+                aria-describedby="userName-hint"
+                className={`${fieldInput} h-10 pl-7 pr-9`}
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2" aria-hidden>
+                {userNameStatus === 'checking' && <Loader2 className="h-4 w-4 animate-spin text-fg-tertiary" />}
+                {userNameStatus === 'available' && <Check className="h-4 w-4 text-success" />}
+                {userNameStatus === 'taken' && <X className="h-4 w-4 text-danger" />}
+              </span>
+            </div>
+            <p id="userName-hint" aria-live="polite" className={`mt-1 text-xs ${userNameStatus === 'taken' || userNameStatus === 'invalid' ? 'text-danger' : 'text-fg-tertiary'}`}>
+              {userNameStatus === 'taken' ? `@${handle} is taken.`
+                : userNameStatus === 'available' ? `@${handle} is available.`
+                : 'Letters, numbers, dots, dashes and underscores (3–30).'}
+            </p>
+          </div>
+          <div>
+            <label htmlFor="email" className={fieldLabel}>Email</label>
+            <input id="email" type="email" inputMode="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="email" className={`${fieldInput} h-10`} />
+          </div>
+          <PasswordField id="password" label="Password" value={password} onChange={setPassword} autoComplete="new-password" showStrength />
+          <FormError message={error} />
+          <button type="submit" className={`${buttonPrimary} h-10 w-full`}>Continue</button>
+        </form>
+      ) : (
+        <form onSubmit={createAccount} className="space-y-5" noValidate>
+          <div className="flex items-center gap-4">
+            <label htmlFor="avatar" className="relative flex h-20 w-20 shrink-0 cursor-pointer items-center justify-center overflow-hidden rounded-full border border-dashed border-line-strong bg-elevated text-fg-tertiary hover:text-fg">
+              {avatarPreview
+                // eslint-disable-next-line @next/next/no-img-element -- local object url preview
+                ? <img src={avatarPreview} alt="Avatar preview" className="h-full w-full object-cover" />
+                : <ImagePlus className="h-6 w-6" aria-hidden />}
+            </label>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-fg">Avatar</p>
+              <p className="text-xs text-fg-tertiary">A square image works best. Required.</p>
+              <label htmlFor="avatar" className={`${buttonGhost} mt-1 -ml-2.5 cursor-pointer`}>{avatar ? 'Change' : 'Choose image'}</label>
+              <input id="avatar" type="file" accept={IMAGE_TYPES} className="sr-only" onChange={(e) => setAvatar(e.target.files?.[0] ?? null)} />
+            </div>
+          </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 24 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-        >
-          <Card className="border-white/10 bg-black/30 backdrop-blur-xl shadow-2xl shadow-black/20">
-            <CardHeader className="space-y-3">
-              <CardTitle className="text-2xl">Create account</CardTitle>
-              <CardDescription>
-                Choose an avatar now. A cover image is optional and can be added later in settings.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">Full name</label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Your full name" className="pl-10" autoComplete="name" />
-                    </div>
-                  </div>
+          <div>
+            <div className="flex items-baseline justify-between">
+              <p className={fieldLabel}>Cover image <span className="font-normal text-fg-tertiary">(optional)</span></p>
+              {cover && <button type="button" onClick={() => setCover(null)} className="text-xs font-medium text-fg-secondary hover:text-fg">Remove</button>}
+            </div>
+            <label htmlFor="cover" className="relative flex aspect-[4/1] cursor-pointer items-center justify-center overflow-hidden rounded-md border border-dashed border-line-strong bg-elevated text-sm text-fg-tertiary hover:text-fg">
+              {coverPreview
+                // eslint-disable-next-line @next/next/no-img-element -- local object url preview
+                ? <img src={coverPreview} alt="Cover preview" className="h-full w-full object-cover" />
+                : 'Add a wide banner. You can do this later in settings.'}
+            </label>
+            <input id="cover" type="file" accept={IMAGE_TYPES} className="sr-only" onChange={(e) => setCover(e.target.files?.[0] ?? null)} />
+          </div>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">Username</label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input value={userName} onChange={(e) => setUserName(e.target.value)} placeholder="your_handle" className="pl-10" autoComplete="username" />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">Email</label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" className="pl-10" autoComplete="email" />
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium text-muted-foreground">Password</label>
-                    <div className="relative">
-                      <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                      <Input
-                        type={showPassword ? 'text' : 'password'}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Choose a password"
-                        className="pl-10 pr-10"
-                        autoComplete="new-password"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowPassword((value) => !value)}
-                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <label className="group flex cursor-pointer flex-col gap-3 rounded-xl border border-dashed border-white/15 bg-white/5 p-4 transition-colors hover:border-white/25 hover:bg-white/10">
-                    <div className="flex items-center gap-3">
-                      <div className="rounded-full bg-blue-500/15 p-2 text-blue-300">
-                        <Upload className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <p className="font-medium">Avatar</p>
-                        <p className="text-xs text-muted-foreground">Square image recommended</p>
-                      </div>
-                    </div>
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => setAvatar(e.target.files?.[0] ?? null)} />
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <FileImage className="h-4 w-4" />
-                      {avatar ? avatar.name : 'Choose avatar image'}
-                    </div>
-                  </label>
-
-                  <label className="group flex cursor-pointer flex-col gap-3 rounded-xl border border-dashed border-white/15 bg-white/5 p-4 transition-colors hover:border-white/25 hover:bg-white/10">
-                    <div className="flex items-center gap-3">
-                      <div className="rounded-full bg-purple-500/15 p-2 text-purple-300">
-                        <Upload className="h-4 w-4" />
-                      </div>
-                      <div>
-                        <p className="font-medium">Cover image (optional)</p>
-                        <p className="text-xs text-muted-foreground">Wide banner image</p>
-                      </div>
-                    </div>
-                    <input type="file" accept="image/*" className="hidden" onChange={(e) => setCover(e.target.files?.[0] ?? null)} />
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                      <FileImage className="h-4 w-4" />
-                      {cover ? cover.name : 'Choose cover image'}
-                    </div>
-                  </label>
-                </div>
-
-                <Button type="submit" className="w-full bg-linear-to-r from-purple-500 to-blue-500 hover:from-purple-600 hover:to-blue-600" disabled={isSubmitting}>
-                  {isSubmitting ? 'Creating account...' : (
-                    <>
-                      Create account
-                      <ArrowRight className="h-4 w-4" />
-                    </>
-                  )}
-                </Button>
-              </form>
-
-              <p className="mt-6 text-center text-sm text-muted-foreground">
-                Already have an account?{' '}
-                <Link href="/auth/login" className="font-medium text-blue-400 hover:text-blue-300">
-                  Sign in
-                </Link>
-              </p>
-            </CardContent>
-          </Card>
-        </motion.div>
-      </div>
-    </div>
+          <FormError message={error} />
+          <div className="flex gap-2">
+            <button type="button" onClick={() => { setError(null); setStep(1) }} disabled={isSubmitting} className={buttonSecondary}>
+              <ArrowLeft className="h-4 w-4" aria-hidden />
+              Back
+            </button>
+            <button type="submit" disabled={isSubmitting} className={`${buttonPrimary} h-9 flex-1`}>
+              {isSubmitting ? 'Creating account...' : cover ? 'Create account' : 'Skip cover and create account'}
+            </button>
+          </div>
+        </form>
+      )}
+    </AuthCard>
   )
 }

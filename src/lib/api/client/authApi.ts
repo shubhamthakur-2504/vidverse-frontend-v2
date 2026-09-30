@@ -7,6 +7,14 @@ const authApi = {
     register: (data: FormData) => apiClient.post("/auth/register", data),
     logout: () => apiClient.post("/auth/logout"),
     refreshToken: () => apiClient.post("/auth/refresh"),
+    // live check on the register form (the format is validated by the API too)
+    checkUserName: (userName: string) => noAuthRedirectClient.get("/auth/username-availability", { params: { userName } }),
+
+    // email verification and password reset (links with one-time tokens, sent by email)
+    requestEmailVerification: () => apiClient.post("/auth/email-verification"),
+    verifyEmail: (token: string) => noAuthRedirectClient.post("/auth/verify-email", { token }),
+    forgotPassword: (email: string) => noAuthRedirectClient.post("/auth/forgot-password", { email }),
+    resetPassword: (token: string, password: string) => noAuthRedirectClient.post("/auth/reset-password", { token, password }),
 
     // devices signed in to this account
     listSessions: () => apiClient.get("/auth/sessions"),
