@@ -1,16 +1,16 @@
-import ServerHero from '@/components/settings/ServerHero'
-import SettingsClient from '@/components/settings/SettingsClient'
-import type { SettingsClientUser } from '@/components/settings/SettingsClient'
-import { serverFetch } from '@/lib/api/server/serverFetch'
-import { unwrapApiResponse } from '@/lib/unwrapApiRes'
+import ServerHero from "@/components/settings/ServerHero";
+import SettingsClient from "@/components/settings/SettingsClient";
+import type { SettingsClientUser } from "@/components/settings/SettingsClient";
+import { serverFetch } from "@/lib/api/server/serverFetch";
+import { unwrapApiResponse } from "@/lib/unwrapApiRes";
 
 export default async function SettingsPage() {
-  let user: SettingsClientUser = null
+  let user: SettingsClientUser = null;
   try {
-    const res = await serverFetch('/me')
-    user = unwrapApiResponse<SettingsClientUser>(res)
+    const res = await serverFetch("/me");
+    user = unwrapApiResponse<SettingsClientUser>(res);
   } catch {
-    user = null
+    user = null;
   }
 
   return (
@@ -23,5 +23,5 @@ export default async function SettingsPage() {
         <SettingsClient user={user} />
       </div>
     </div>
-  )
+  );
 }

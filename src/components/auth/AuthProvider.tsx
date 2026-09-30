@@ -1,76 +1,76 @@
-"use client"
+"use client";
 
-import { createContext, useContext, useEffect, useState } from 'react'
-import { useRouter } from 'next/navigation'
-import authApi from '@/lib/api/client/authApi'
+import { createContext, useContext, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import authApi from "@/lib/api/client/authApi";
 
 interface User {
-  _id: string
-  userName: string
-  email: string
-  fullName: string
-  avatarUrl?: string
-  coverImageUrl?: string
+  _id: string;
+  userName: string;
+  email: string;
+  fullName: string;
+  avatarUrl?: string;
+  coverImageUrl?: string;
   // null until the owner opens the emailed verification link
-  emailVerifiedAt?: string | null
+  emailVerifiedAt?: string | null;
 }
 
 interface AuthContextType {
-  user: User | null
-  loading: boolean
-  login: (identifier: string, password: string) => Promise<void>
-  logout: () => Promise<void>
-  refreshUser: () => Promise<void>
+  user: User | null;
+  loading: boolean;
+  login: (identifier: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
+  refreshUser: () => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
-  const router = useRouter()
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   const fetchUser = async () => {
     try {
-      const response = await authApi.getCurrentUser()
-      setUser(response.data.data)
+      const response = await authApi.getCurrentUser();
+      setUser(response.data.data);
     } catch {
-      setUser(null)
+      setUser(null);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    fetchUser()
-  }, [])
+    fetchUser();
+  }, []);
 
   const login = async (identifier: string, password: string) => {
-    const response = await authApi.login({ identifier, password })
-    setUser(response.data.data.user)
-  }
+    const response = await authApi.login({ identifier, password });
+    setUser(response.data.data.user);
+  };
 
   const logout = async () => {
-    await authApi.logout()
-    setUser(null)
-    router.push('/')
-  }
+    await authApi.logout();
+    setUser(null);
+    router.push("/");
+  };
 
   const refreshUser = async () => {
-    await fetchUser()
-  }
+    await fetchUser();
+  };
 
   return (
     <AuthContext.Provider value={{ user, loading, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
-  )
+  );
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext)
+  const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider')
+    throw new Error("useAuth must be used within an AuthProvider");
   }
-  return context
+  return context;
 }

@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import Link from 'next/link'
-import Image from 'next/image'
-import { formatViews, formatTimeAgo, formatDuration } from '@/lib/utils'
-import { motion } from 'framer-motion'
-import { VideoIcon } from 'lucide-react'
-import { Video } from '@/lib/types/videoType'
+import Link from "next/link";
+import Image from "next/image";
+import { formatViews, formatTimeAgo, formatDuration } from "@/lib/utils";
+import { motion } from "framer-motion";
+import { VideoIcon } from "lucide-react";
+import { Video } from "@/lib/types/videoType";
 
 // "up next": the watch page fetches these server-side (GET /v2/videos/:id/related) and passes them in
 export function RelatedVideos({ videos }: { videos: Video[] }) {
@@ -17,7 +17,7 @@ export function RelatedVideos({ videos }: { videos: Video[] }) {
         </div>
         <p className="text-sm text-white/30">No related videos found</p>
       </div>
-    )
+    );
   }
 
   return (
@@ -38,7 +38,6 @@ export function RelatedVideos({ videos }: { videos: Video[] }) {
           >
             <Link href={`/watch/${video._id}`}>
               <div className="flex gap-3 group cursor-pointer p-2 -mx-2 rounded-xl hover:bg-white/[0.04] transition-all duration-200">
-
                 {/* Thumbnail */}
                 <div className="relative w-36 aspect-video rounded-xl overflow-hidden bg-[#111118] flex-shrink-0 border border-white/[0.05]">
                   <Image
@@ -74,5 +73,5 @@ export function RelatedVideos({ videos }: { videos: Video[] }) {
         ))}
       </div>
     </div>
-  )
+  );
 }

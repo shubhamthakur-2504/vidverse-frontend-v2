@@ -28,5 +28,5 @@ export function VideoGridSkeleton() {
         ))}
       </div>
     </div>
-  )
+  );
 }

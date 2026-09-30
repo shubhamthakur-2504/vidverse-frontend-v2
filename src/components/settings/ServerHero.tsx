@@ -1,28 +1,34 @@
 // ServerHero: server-rendered hero with banner + avatar for settings
-import { unwrapApiResponse } from '@/lib/unwrapApiRes'
-import { serverFetch } from '@/lib/api/server/serverFetch'
+import { unwrapApiResponse } from "@/lib/unwrapApiRes";
+import { serverFetch } from "@/lib/api/server/serverFetch";
 
 type ServerUser = {
-  avatarUrl?: string
-  coverImageUrl?: string
-  userName?: string
-  fullName?: string
-  email?: string
-} | null
+  avatarUrl?: string;
+  coverImageUrl?: string;
+  userName?: string;
+  fullName?: string;
+  email?: string;
+} | null;
 
 export default async function ServerHero({ user }: { user: ServerUser }) {
-  let stats = { subscribersCount: 0, subscriptionsCount: 0 }
+  let stats = { subscribersCount: 0, subscriptionsCount: 0 };
   try {
-    const res = await serverFetch('/me/stats')
-    const data = unwrapApiResponse<{ subscribersCount?: number; subscriptionsCount?: number }>(res)
-    stats = { subscribersCount: data.subscribersCount || 0, subscriptionsCount: data.subscriptionsCount || 0 }
+    const res = await serverFetch("/me/stats");
+    const data = unwrapApiResponse<{
+      subscribersCount?: number;
+      subscriptionsCount?: number;
+    }>(res);
+    stats = {
+      subscribersCount: data.subscribersCount || 0,
+      subscriptionsCount: data.subscriptionsCount || 0,
+    };
   } catch {
     // swallow — show zeros
   }
 
-  const coverSrc = user?.coverImageUrl || ''
-  const avatarSrc = user?.avatarUrl || ''
-  const initials = user?.userName?.charAt(0)?.toUpperCase() || '?'
+  const coverSrc = user?.coverImageUrl || "";
+  const avatarSrc = user?.avatarUrl || "";
+  const initials = user?.userName?.charAt(0)?.toUpperCase() || "?";
 
   return (
     <section className="relative overflow-hidden rounded-[1.5rem] border border-white/10 bg-black/30 shadow-2xl shadow-black/30">
@@ -51,7 +57,7 @@ export default async function ServerHero({ user }: { user: ServerUser }) {
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={avatarSrc}
-                alt={user?.userName || 'User'}
+                alt={user?.userName || "User"}
                 className="h-full w-full object-cover"
               />
             ) : (
@@ -63,14 +69,12 @@ export default async function ServerHero({ user }: { user: ServerUser }) {
 
           <div className="min-w-0 flex-1 pb-1">
             <h1 className="truncate text-2xl font-extrabold sm:text-3xl">
-              {user?.fullName || 'Creator'}
+              {user?.fullName || "Creator"}
             </h1>
             <p className="text-sm text-muted-foreground">
-              @{user?.userName || 'unknown'}
+              @{user?.userName || "unknown"}
               {user?.email && (
-                <span className="ml-2 hidden sm:inline">
-                  · {user.email}
-                </span>
+                <span className="ml-2 hidden sm:inline">· {user.email}</span>
               )}
             </p>
           </div>
@@ -89,5 +93,5 @@ export default async function ServerHero({ user }: { user: ServerUser }) {
         </div>
       </div>
     </section>
-  )
+  );
 }

@@ -3,7 +3,7 @@ type UploadVideoPayload = {
   description?: string;
   videoFile: File;
   thumbnailFile?: File;
-}
+};
 
 type UpdateVideoPayload =
   | { title: string; description?: string; thumbnail?: File }
@@ -14,42 +14,60 @@ type PlayListPayload = {
   title: string;
   description?: string;
   thumbnail?: File;
-}
+};
 
 type EditPlayListPayload = {
   playlistId: string;
   videoId: string;
-}
+};
 
 export interface Video {
-  _id: string
-  title: string
-  thumbnailUrl: string
-  videoFileUrl: string
-  description: string
-  duration: number
-  views: number
-  isPublished?: boolean
-  status?: 'processing' | 'ready' | 'failed'
-  category?: string
-  createdAt: string
+  _id: string;
+  title: string;
+  thumbnailUrl: string;
+  videoFileUrl: string;
+  description: string;
+  duration: number;
+  views: number;
+  isPublished?: boolean;
+  status?: "processing" | "ready" | "failed";
+  category?: string;
+  createdAt: string;
   owner: {
-    _id: string
-    userName: string
-    fullName: string
-    avatarUrl: string
-  }
+    _id: string;
+    userName: string;
+    fullName: string;
+    avatarUrl: string;
+  };
 }
 
 // what a video card needs; channel lists return this subset
-export type VideoSummary = Pick<Video, '_id' | 'title' | 'thumbnailUrl' | 'duration' | 'views' | 'createdAt' | 'owner'>
+export type VideoSummary = Pick<
+  Video,
+  | "_id"
+  | "title"
+  | "thumbnailUrl"
+  | "duration"
+  | "views"
+  | "createdAt"
+  | "owner"
+>;
 
 // GET /v2/videos/:id: the video with counts and the viewer's own state, for the watch page
-export interface WatchVideo extends Omit<Video, 'owner'> {
-  relativeTime: string
-  owner: Video['owner'] & { subscribersCount: number }
-  stats: { likes: number; dislikes: number; comments: number }
-  viewer: { reaction: 'like' | 'dislike' | null; isSubscribed: boolean; isOwner: boolean }
+export interface WatchVideo extends Omit<Video, "owner"> {
+  relativeTime: string;
+  owner: Video["owner"] & { subscribersCount: number };
+  stats: { likes: number; dislikes: number; comments: number };
+  viewer: {
+    reaction: "like" | "dislike" | null;
+    isSubscribed: boolean;
+    isOwner: boolean;
+  };
 }
 
-export type { UploadVideoPayload, UpdateVideoPayload, PlayListPayload, EditPlayListPayload };
+export type {
+  UploadVideoPayload,
+  UpdateVideoPayload,
+  PlayListPayload,
+  EditPlayListPayload,
+};

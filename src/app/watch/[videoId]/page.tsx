@@ -1,42 +1,46 @@
-import { Suspense } from 'react'
-import { VideoPlayer } from '@/components/video/VideoPlayer'
-import { VideoInfo } from '@/components/video/VideoInfo'
-import { CommentSection } from '@/components/video/CommentSection'
-import { RelatedVideos } from '@/components/video/RelatedVideos'
-import { VideoPlayerSkeleton } from '@/components/video/VideoPlayerSkeleton'
-import { videoApi } from '@/lib/api/server/videoApi'
-import { unwrapApiResponse } from '@/lib/unwrapApiRes'
-import { Video, WatchVideo } from '@/lib/types/videoType'
-import Link from 'next/link'
-import { Home, ChevronRight } from 'lucide-react'
+import { Suspense } from "react";
+import { VideoPlayer } from "@/components/video/VideoPlayer";
+import { VideoInfo } from "@/components/video/VideoInfo";
+import { CommentSection } from "@/components/video/CommentSection";
+import { RelatedVideos } from "@/components/video/RelatedVideos";
+import { VideoPlayerSkeleton } from "@/components/video/VideoPlayerSkeleton";
+import { videoApi } from "@/lib/api/server/videoApi";
+import { unwrapApiResponse } from "@/lib/unwrapApiRes";
+import { Video, WatchVideo } from "@/lib/types/videoType";
+import Link from "next/link";
+import { Home, ChevronRight } from "lucide-react";
 
 type WatchPageParams = {
-  params: { videoId: string } | Promise<{ videoId: string }>
-}
+  params: { videoId: string } | Promise<{ videoId: string }>;
+};
 
 export default async function WatchPage({ params }: WatchPageParams) {
-  const resolvedParams = await Promise.resolve(params)
-  const videoId: string = resolvedParams.videoId
+  const resolvedParams = await Promise.resolve(params);
+  const videoId: string = resolvedParams.videoId;
 
   // the watch payload (video, counts, viewer state) and "up next" are fetched in parallel on the server
   const [detailsRes, relatedRes] = await Promise.allSettled([
     videoApi.getVideoDetails(videoId),
     videoApi.getRelated(videoId),
-  ])
+  ]);
 
-  let videoData: WatchVideo | null = null
+  let videoData: WatchVideo | null = null;
   try {
-    if (detailsRes.status === 'rejected') throw detailsRes.reason
-    videoData = unwrapApiResponse<WatchVideo>(detailsRes.value)
+    if (detailsRes.status === "rejected") throw detailsRes.reason;
+    videoData = unwrapApiResponse<WatchVideo>(detailsRes.value);
   } catch (error: unknown) {
-    console.error('Failed to fetch video details.', error instanceof Error ? error.message : error)
+    console.error(
+      "Failed to fetch video details.",
+      error instanceof Error ? error.message : error
+    );
   }
 
-  let relatedVideos: Video[] = []
+  let relatedVideos: Video[] = [];
   try {
-    if (relatedRes.status === 'fulfilled') relatedVideos = unwrapApiResponse<Video[]>(relatedRes.value) ?? []
+    if (relatedRes.status === "fulfilled")
+      relatedVideos = unwrapApiResponse<Video[]>(relatedRes.value) ?? [];
   } catch {
-    relatedVideos = []
+    relatedVideos = [];
   }
 
   if (videoData == null) {
@@ -48,7 +52,8 @@ export default async function WatchPage({ params }: WatchPageParams) {
           </div>
           <h2 className="text-2xl font-bold text-white">Video not found</h2>
           <p className="text-white/40 text-sm leading-relaxed">
-            This video may have been removed, made private, or the link might be incorrect.
+            This video may have been removed, made private, or the link might be
+            incorrect.
           </p>
           <Link
             href="/"
@@ -59,7 +64,7 @@ export default async function WatchPage({ params }: WatchPageParams) {
           </Link>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -71,17 +76,19 @@ export default async function WatchPage({ params }: WatchPageParams) {
       </div>
 
       <div className="container mx-auto px-4 max-w-[1440px]">
-
         {/* Breadcrumb */}
         <nav className="flex items-center gap-2 text-xs text-white/25 py-4 mb-2">
-          <Link href="/" className="hover:text-white/60 transition-colors">Home</Link>
+          <Link href="/" className="hover:text-white/60 transition-colors">
+            Home
+          </Link>
           <ChevronRight className="h-3 w-3" />
-          <span className="text-white/50 truncate max-w-xs">{videoData.title}</span>
+          <span className="text-white/50 truncate max-w-xs">
+            {videoData.title}
+          </span>
         </nav>
 
         {/* Main layout */}
         <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-8">
-
           {/* Left — Primary content */}
           <div className="space-y-5 min-w-0">
             <Suspense fallback={<VideoPlayerSkeleton />}>
@@ -103,7 +110,11 @@ export default async function WatchPage({ params }: WatchPageParams) {
                 <div className="h-px bg-white/[0.05]" />
 
                 {/* Comments */}
-                <CommentSection targetId={videoId} targetType="Video" isContentOwner={videoData.viewer.isOwner} />
+                <CommentSection
+                  targetId={videoId}
+                  targetType="Video"
+                  isContentOwner={videoData.viewer.isOwner}
+                />
               </>
             </Suspense>
           </div>
@@ -115,5 +126,5 @@ export default async function WatchPage({ params }: WatchPageParams) {
         </div>
       </div>
     </div>
-  )
+  );
 }

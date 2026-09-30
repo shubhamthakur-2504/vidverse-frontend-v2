@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter } from "next/font/google";
 import "../styles/globals.css";
-import { AuthProvider } from '@/components/auth/AuthProvider'
-import { Navbar } from '@/components/layout/Navbar'
-import { Toaster } from '@/components/ui/sonner'
+import { AuthProvider } from "@/components/auth/AuthProvider";
+import { Navbar } from "@/components/layout/Navbar";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -18,14 +18,14 @@ const geistMono = Geist_Mono({
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
-  weight: ['300', '400', '500', '600', '700', '800', '900'],
-  display: 'swap',
+  weight: ["300", "400", "500", "600", "700", "800", "900"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: 'VidVerse - Share Your Story',
-  description: 'A modern video streaming platform built with Next.js',
-}
+  title: "VidVerse - Share Your Story",
+  description: "A modern video streaming platform built with Next.js",
+};
 
 export default function RootLayout({
   children,

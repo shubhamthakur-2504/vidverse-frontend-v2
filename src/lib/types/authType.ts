@@ -1,28 +1,33 @@
 type Login = {
-    identifier: string; // username or email
-    password: string;
-}
+  identifier: string; // username or email
+  password: string;
+};
 type RegisterForm = {
-    email: string;
-    password: string;
-    username: string;
-    fullName: string;
-    avatar: File;
-    cover?: File;
-}
+  email: string;
+  password: string;
+  username: string;
+  fullName: string;
+  avatar: File;
+  cover?: File;
+};
 
 type ChangePassword = {
-    currentPassword: string;
-    newPassword: string;
-}
+  currentPassword: string;
+  newPassword: string;
+};
 
 type ChangeFiles =
-    | { avatar: File; cover?: never }
-    | { cover: File; avatar?: never };
+  | { avatar: File; cover?: never }
+  | { cover: File; avatar?: never };
 
 type ChangeUserInfo =
-    | { userName: string; fullName?: string }
-    | { fullName: string; userName?: never };
+  | { userName: string; fullName?: string }
+  | { fullName: string; userName?: never };
 
-
-export type { Login, RegisterForm, ChangePassword, ChangeFiles, ChangeUserInfo };
+export type {
+  Login,
+  RegisterForm,
+  ChangePassword,
+  ChangeFiles,
+  ChangeUserInfo,
+};

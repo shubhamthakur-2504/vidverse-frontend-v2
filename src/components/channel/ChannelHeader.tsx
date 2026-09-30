@@ -1,49 +1,61 @@
-"use client"
+"use client";
 
-import { useState } from 'react'
-import Image from 'next/image'
-import Link from 'next/link'
-import { Bell, LayoutDashboard } from 'lucide-react'
-import { toast } from 'sonner'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { useAuth } from '@/components/auth/AuthProvider'
-import subscriptionApi from '@/lib/api/client/subscriptionApi'
-import { getApiErrorMessage } from '@/lib/apiErrorMessage'
-import { formatViews } from '@/lib/utils'
-import type { Channel } from '@/lib/types/channelType'
-import { buttonPrimary, buttonSecondary } from '@/components/studio/styles'
+import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { Bell, LayoutDashboard } from "lucide-react";
+import { toast } from "sonner";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/components/auth/AuthProvider";
+import subscriptionApi from "@/lib/api/client/subscriptionApi";
+import { getApiErrorMessage } from "@/lib/apiErrorMessage";
+import { formatViews } from "@/lib/utils";
+import type { Channel } from "@/lib/types/channelType";
+import { buttonPrimary, buttonSecondary } from "@/components/studio/styles";
 
-const plural = (count: number, word: string) => `${formatViews(count)} ${word}${count === 1 ? '' : 's'}`
+const plural = (count: number, word: string) =>
+  `${formatViews(count)} ${word}${count === 1 ? "" : "s"}`;
 
 export function ChannelHeader({ channel }: { channel: Channel }) {
-  const { user } = useAuth()
-  const [isSubscribed, setIsSubscribed] = useState(channel.isSubscribed)
-  const [subscribers, setSubscribers] = useState(channel.subscribersCount)
-  const [busy, setBusy] = useState(false)
+  const { user } = useAuth();
+  const [isSubscribed, setIsSubscribed] = useState(channel.isSubscribed);
+  const [subscribers, setSubscribers] = useState(channel.subscribersCount);
+  const [busy, setBusy] = useState(false);
 
   const toggleSubscription = async () => {
-    if (!user) return toast.error('Sign in to subscribe')
-    const next = !isSubscribed
+    if (!user) return toast.error("Sign in to subscribe");
+    const next = !isSubscribed;
     // optimistic: flip now, roll back if the request fails
-    setIsSubscribed(next)
-    setSubscribers((count) => count + (next ? 1 : -1))
-    setBusy(true)
+    setIsSubscribed(next);
+    setSubscribers((count) => count + (next ? 1 : -1));
+    setBusy(true);
     try {
-      await (next ? subscriptionApi.subscribe(channel._id) : subscriptionApi.unsubscribe(channel._id))
+      await (next
+        ? subscriptionApi.subscribe(channel._id)
+        : subscriptionApi.unsubscribe(channel._id));
     } catch (error: unknown) {
-      setIsSubscribed(!next)
-      setSubscribers((count) => count + (next ? -1 : 1))
-      toast.error('Could not update the subscription', { description: getApiErrorMessage(error) })
+      setIsSubscribed(!next);
+      setSubscribers((count) => count + (next ? -1 : 1));
+      toast.error("Could not update the subscription", {
+        description: getApiErrorMessage(error),
+      });
     } finally {
-      setBusy(false)
+      setBusy(false);
     }
-  }
+  };
 
   return (
     <header>
       <div className="relative aspect-[6/1] min-h-24 overflow-hidden rounded-lg border border-line bg-elevated">
         {channel.coverImageUrl && (
-          <Image src={channel.coverImageUrl} alt="" fill priority sizes="(max-width: 1536px) 100vw, 1536px" className="object-cover" />
+          <Image
+            src={channel.coverImageUrl}
+            alt=""
+            fill
+            priority
+            sizes="(max-width: 1536px) 100vw, 1536px"
+            className="object-cover"
+          />
         )}
       </div>
 
@@ -56,13 +68,19 @@ export function ChannelHeader({ channel }: { channel: Channel }) {
         </Avatar>
 
         <div className="min-w-0 flex-1">
-          <h1 className="truncate text-2xl font-semibold tracking-tight text-fg">{channel.fullName}</h1>
+          <h1 className="truncate text-2xl font-semibold tracking-tight text-fg">
+            {channel.fullName}
+          </h1>
           <p className="mt-1 text-sm text-fg-secondary">
             @{channel.userName}
-            <span className="mx-2 text-fg-tertiary" aria-hidden>·</span>
-            {plural(subscribers, 'subscriber')}
-            <span className="mx-2 text-fg-tertiary" aria-hidden>·</span>
-            {plural(channel.videosCount, 'video')}
+            <span className="mx-2 text-fg-tertiary" aria-hidden>
+              ·
+            </span>
+            {plural(subscribers, "subscriber")}
+            <span className="mx-2 text-fg-tertiary" aria-hidden>
+              ·
+            </span>
+            {plural(channel.videosCount, "video")}
           </p>
         </div>
 
@@ -80,10 +98,10 @@ export function ChannelHeader({ channel }: { channel: Channel }) {
             className={isSubscribed ? buttonSecondary : buttonPrimary}
           >
             {isSubscribed && <Bell className="h-4 w-4" aria-hidden />}
-            {isSubscribed ? 'Subscribed' : 'Subscribe'}
+            {isSubscribed ? "Subscribed" : "Subscribe"}
           </button>
         )}
       </div>
     </header>
-  )
+  );
 }

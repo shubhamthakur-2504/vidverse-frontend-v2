@@ -1,73 +1,94 @@
-"use client"
+"use client";
 
-import Link from 'next/link'
-import { useRouter, usePathname, useSearchParams } from 'next/navigation'
-import { useAuth } from '@/components/auth/AuthProvider'
-import { NotificationBell } from '@/components/notifications/NotificationBell'
-import { Button } from '@/components/ui/button'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Search, Settings, LogOut, Clapperboard, X, Upload, LayoutDashboard, UserRound, History, ListVideo, Rss } from 'lucide-react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { useState, useRef, useEffect, Suspense } from 'react'
-import { MAX_QUERY_LENGTH, resultsHref } from '@/lib/search'
+import Link from "next/link";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { NotificationBell } from "@/components/notifications/NotificationBell";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import {
+  Search,
+  Settings,
+  LogOut,
+  Clapperboard,
+  X,
+  Upload,
+  LayoutDashboard,
+  UserRound,
+  History,
+  ListVideo,
+  Rss,
+} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState, useRef, useEffect, Suspense } from "react";
+import { MAX_QUERY_LENGTH, resultsHref } from "@/lib/search";
 
 // shows the current search in the box on /results and empties it elsewhere
 // (useSearchParams needs its own Suspense boundary so it doesn't opt every page out of static rendering)
 function SyncSearchValue({ onChange }: { onChange: (value: string) => void }) {
-  const pathname = usePathname()
-  const q = useSearchParams().get('q')
+  const pathname = usePathname();
+  const q = useSearchParams().get("q");
   useEffect(() => {
-    onChange(pathname === '/results' ? (q ?? '') : '')
-  }, [pathname, q, onChange])
-  return null
+    onChange(pathname === "/results" ? (q ?? "") : "");
+  }, [pathname, q, onChange]);
+  return null;
 }
 
 export function Navbar() {
-  const router = useRouter()
-  const { user, logout } = useAuth()
-  const [isSearchFocused, setIsSearchFocused] = useState(false)
-  const [searchValue, setSearchValue] = useState('')
-  const [isScrolled, setIsScrolled] = useState(false)
-  const searchRef = useRef<HTMLInputElement>(null)
+  const router = useRouter();
+  const { user, logout } = useAuth();
+  const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [searchValue, setSearchValue] = useState("");
+  const [isScrolled, setIsScrolled] = useState(false);
+  const searchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 10)
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+    const handleScroll = () => setIsScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (searchValue.trim()) {
       // a new search starts without filters
-      router.push(resultsHref({ q: searchValue.trim() }))
-      searchRef.current?.blur()
+      router.push(resultsHref({ q: searchValue.trim() }));
+      searchRef.current?.blur();
     } else {
-      router.push('/')
+      router.push("/");
     }
-  }
+  };
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 10)
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
+    const handleScroll = () => setIsScrolled(window.scrollY > 10);
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   return (
     <motion.nav
       initial={{ y: -80, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled
-          ? 'bg-[#0a0a0f]/90 backdrop-blur-2xl border-b border-white/[0.06] shadow-xl shadow-black/30'
-          : 'bg-transparent'
-        }`}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+        isScrolled
+          ? "bg-[#0a0a0f]/90 backdrop-blur-2xl border-b border-white/[0.06] shadow-xl shadow-black/30"
+          : "bg-transparent"
+      }`}
     >
       <div className="container mx-auto px-4 h-16 flex items-center justify-between gap-4">
-
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
+        <Link
+          href="/"
+          className="flex items-center gap-2.5 group flex-shrink-0"
+        >
           <div className="relative">
             {/* Glow ring */}
             <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-violet-600 to-cyan-500 opacity-0 group-hover:opacity-60 blur-lg transition-all duration-500 scale-150" />
@@ -82,7 +103,10 @@ export function Navbar() {
         </Link>
 
         {/* public sections that are not in the account menu */}
-        <Link href="/community" className="hidden text-sm font-medium text-fg-secondary transition-colors hover:text-fg md:block">
+        <Link
+          href="/community"
+          className="hidden text-sm font-medium text-fg-secondary transition-colors hover:text-fg md:block"
+        >
           Community
         </Link>
 
@@ -95,12 +119,20 @@ export function Navbar() {
           <Suspense fallback={null}>
             <SyncSearchValue onChange={setSearchValue} />
           </Suspense>
-          <form role="search" onSubmit={handleSearchSubmit} className={`relative transition-all duration-300 ${isSearchFocused
-              ? 'ring-1 ring-violet-500/60 rounded-full shadow-lg shadow-violet-500/10'
-              : ''
-            }`}>
-            <Search className={`absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors duration-200 ${isSearchFocused ? 'text-violet-400' : 'text-white/30'
-              }`} />
+          <form
+            role="search"
+            onSubmit={handleSearchSubmit}
+            className={`relative transition-all duration-300 ${
+              isSearchFocused
+                ? "ring-1 ring-violet-500/60 rounded-full shadow-lg shadow-violet-500/10"
+                : ""
+            }`}
+          >
+            <Search
+              className={`absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 transition-colors duration-200 ${
+                isSearchFocused ? "text-violet-400" : "text-white/30"
+              }`}
+            />
             <input
               ref={searchRef}
               type="text"
@@ -108,7 +140,7 @@ export function Navbar() {
               enterKeyHint="search"
               maxLength={MAX_QUERY_LENGTH}
               value={searchValue}
-              onChange={e => setSearchValue(e.target.value)}
+              onChange={(e) => setSearchValue(e.target.value)}
               placeholder="Search videos"
               onFocus={() => setIsSearchFocused(true)}
               onBlur={() => setIsSearchFocused(false)}
@@ -124,7 +156,10 @@ export function Navbar() {
                   initial={{ opacity: 0, scale: 0.7 }}
                   animate={{ opacity: 1, scale: 1 }}
                   exit={{ opacity: 0, scale: 0.7 }}
-                  onClick={() => { setSearchValue(''); searchRef.current?.focus() }}
+                  onClick={() => {
+                    setSearchValue("");
+                    searchRef.current?.focus();
+                  }}
                   aria-label="Clear search"
                   className="absolute right-3 top-1/2 -translate-y-1/2 p-0.5 rounded-full hover:bg-white/10 transition-colors"
                 >
@@ -147,7 +182,11 @@ export function Navbar() {
                 <Upload className="h-4 w-4" aria-hidden />
                 Create
               </Link>
-              <Link href="/studio/upload" aria-label="Upload a video" className="inline-flex h-9 w-9 items-center justify-center rounded-full text-fg transition-colors hover:bg-elevated sm:hidden">
+              <Link
+                href="/studio/upload"
+                aria-label="Upload a video"
+                className="inline-flex h-9 w-9 items-center justify-center rounded-full text-fg transition-colors hover:bg-elevated sm:hidden"
+              >
                 <Upload className="h-4 w-4" aria-hidden />
               </Link>
               <NotificationBell />
@@ -183,8 +222,12 @@ export function Navbar() {
                       </AvatarFallback>
                     </Avatar>
                     <div className="flex flex-col min-w-0">
-                      <p className="font-semibold text-sm text-white truncate">{user?.fullName}</p>
-                      <p className="text-xs text-white/40 truncate">@{user?.userName}</p>
+                      <p className="font-semibold text-sm text-white truncate">
+                        {user?.fullName}
+                      </p>
+                      <p className="text-xs text-white/40 truncate">
+                        @{user?.userName}
+                      </p>
                     </div>
                   </div>
 
@@ -271,10 +314,11 @@ export function Navbar() {
                 </Button>
               </Link>
               <Link href="/auth/register">
-                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                  <Button
-                    className="h-9 px-5 text-sm font-semibold rounded-full btn-gradient text-white hover:text-white border-0 shadow-lg shadow-violet-500/25"
-                  >
+                <motion.div
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  <Button className="h-9 px-5 text-sm font-semibold rounded-full btn-gradient text-white hover:text-white border-0 shadow-lg shadow-violet-500/25">
                     <span>Sign Up</span>
                   </Button>
                 </motion.div>
@@ -284,5 +328,5 @@ export function Navbar() {
         </div>
       </div>
     </motion.nav>
-  )
+  );
 }

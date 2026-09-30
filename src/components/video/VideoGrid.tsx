@@ -1,40 +1,46 @@
-"use client"
+"use client";
 
-import { useState } from 'react'
-import { VideoCard } from './VideoCard'
-import { motion } from 'framer-motion'
-import { VideoIcon, Sparkles, Loader2 } from 'lucide-react'
-import { Video } from '@/lib/types/videoType'
-import { Page } from '@/lib/types/apiType'
-import videoApi from '@/lib/api/client/videoApi'
-import { getApiErrorMessage } from '@/lib/apiErrorMessage'
-import { toast } from 'sonner'
+import { useState } from "react";
+import { VideoCard } from "./VideoCard";
+import { motion } from "framer-motion";
+import { VideoIcon, Sparkles, Loader2 } from "lucide-react";
+import { Video } from "@/lib/types/videoType";
+import { Page } from "@/lib/types/apiType";
+import videoApi from "@/lib/api/client/videoApi";
+import { getApiErrorMessage } from "@/lib/apiErrorMessage";
+import { toast } from "sonner";
 
 interface VideoGridProps {
-  initialVideos: Video[]
-  initialCursor: string | null
-  category?: string
+  initialVideos: Video[];
+  initialCursor: string | null;
+  category?: string;
 }
 
-export function VideoGrid({ initialVideos, initialCursor, category }: VideoGridProps) {
-  const [videos, setVideos] = useState(initialVideos)
-  const [cursor, setCursor] = useState(initialCursor)
-  const [isLoadingMore, setIsLoadingMore] = useState(false)
+export function VideoGrid({
+  initialVideos,
+  initialCursor,
+  category,
+}: VideoGridProps) {
+  const [videos, setVideos] = useState(initialVideos);
+  const [cursor, setCursor] = useState(initialCursor);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const loadMore = async () => {
-    if (!cursor || isLoadingMore) return
-    setIsLoadingMore(true)
+    if (!cursor || isLoadingMore) return;
+    setIsLoadingMore(true);
     try {
-      const res = await videoApi.getAll({ category, cursor })
-      const page: Page<Video> = res.data.data
-      setVideos((current) => [...current, ...page.items])
-      setCursor(page.nextCursor)
+      const res = await videoApi.getAll({ category, cursor });
+      const page: Page<Video> = res.data.data;
+      setVideos((current) => [...current, ...page.items]);
+      setCursor(page.nextCursor);
     } catch (error: unknown) {
-      toast.error('Could not load more videos', { description: getApiErrorMessage(error) })
+      toast.error("Could not load more videos", {
+        description: getApiErrorMessage(error),
+      });
     } finally {
-      setIsLoadingMore(false)
+      setIsLoadingMore(false);
     }
-  }
+  };
 
   if (!videos || videos.length === 0) {
     return (
@@ -51,13 +57,16 @@ export function VideoGrid({ initialVideos, initialCursor, category }: VideoGridP
           </div>
         </div>
         <div className="text-center">
-          <h3 className="text-xl font-bold text-white/80 mb-2">No videos yet</h3>
+          <h3 className="text-xl font-bold text-white/80 mb-2">
+            No videos yet
+          </h3>
           <p className="text-sm text-white/35 max-w-xs leading-relaxed">
-            Be the first to share something amazing. Upload a video to get started.
+            Be the first to share something amazing. Upload a video to get
+            started.
           </p>
         </div>
       </motion.div>
-    )
+    );
   }
 
   return (
@@ -92,10 +101,10 @@ export function VideoGrid({ initialVideos, initialCursor, category }: VideoGridP
             className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white/[0.06] border border-white/[0.08] text-sm font-medium text-white/80 hover:text-white hover:bg-white/[0.09] transition-colors disabled:opacity-60"
           >
             {isLoadingMore && <Loader2 className="h-4 w-4 animate-spin" />}
-            {isLoadingMore ? 'Loading...' : 'Load more'}
+            {isLoadingMore ? "Loading..." : "Load more"}
           </button>
         </div>
       )}
     </div>
-  )
+  );
 }

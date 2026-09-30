@@ -1,13 +1,15 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import * as SliderPrimitive from "@radix-ui/react-slider"
-import { cn } from "@/lib/utils"
+import * as React from "react";
+import * as SliderPrimitive from "@radix-ui/react-slider";
+import { cn } from "@/lib/utils";
 
 const Slider = React.forwardRef<
   React.ComponentRef<typeof SliderPrimitive.Root>,
   // thumbLabel names the draggable thumb for screen readers (Radix reads the label from the thumb, not the root)
-  React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root> & { thumbLabel?: string }
+  React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root> & {
+    thumbLabel?: string;
+  }
 >(({ className, thumbLabel, ...props }, ref) => (
   <SliderPrimitive.Root
     ref={ref}
@@ -21,10 +23,13 @@ const Slider = React.forwardRef<
       <SliderPrimitive.Range className="absolute h-full bg-linear-to-r from-blue-500 to-purple-500" />
     </SliderPrimitive.Track>
 
-    <SliderPrimitive.Thumb aria-label={thumbLabel} className="block h-4 w-4 rounded-full border-2 border-blue-500 bg-white shadow-lg ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50" />
+    <SliderPrimitive.Thumb
+      aria-label={thumbLabel}
+      className="block h-4 w-4 rounded-full border-2 border-blue-500 bg-white shadow-lg ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+    />
   </SliderPrimitive.Root>
-))
+));
 
-Slider.displayName = "Slider"
+Slider.displayName = "Slider";
 
-export { Slider }
+export { Slider };

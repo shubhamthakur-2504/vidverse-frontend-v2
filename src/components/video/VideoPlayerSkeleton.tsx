@@ -33,5 +33,5 @@ export function VideoPlayerSkeleton() {
         <div className="h-3 shimmer-container rounded w-4/6" />
       </div>
     </div>
-  )
+  );
 }
