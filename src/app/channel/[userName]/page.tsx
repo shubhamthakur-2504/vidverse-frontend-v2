@@ -10,6 +10,9 @@ import type { Page } from '@/lib/types/apiType'
 import { ChannelHeader } from '@/components/channel/ChannelHeader'
 import { PagedVideoGrid } from '@/components/video/PagedVideoGrid'
 import { PlaylistGrid } from '@/components/library/PlaylistGrid'
+import { PostFeed } from '@/components/posts/PostFeed'
+import { postApi } from '@/lib/api/server/postApi'
+import type { Post } from '@/lib/types/postType'
 
 type ChannelPageProps = {
   params: Promise<{ userName: string }>
@@ -28,7 +31,11 @@ const loadChannel = cache(async (userName: string): Promise<Channel | null> => {
 const TABS = [
   { id: 'videos', label: 'Videos' },
   { id: 'playlists', label: 'Playlists' },
+  { id: 'posts', label: 'Posts' },
 ] as const
+
+type TabId = (typeof TABS)[number]['id']
+const isTab = (value: string | undefined): value is TabId => TABS.some((t) => t.id === value)
 
 export async function generateMetadata({ params }: ChannelPageProps): Promise<Metadata> {
   const { userName } = await params
@@ -39,16 +46,19 @@ export async function generateMetadata({ params }: ChannelPageProps): Promise<Me
 export default async function ChannelPage({ params, searchParams }: ChannelPageProps) {
   const { userName: rawUserName } = await params
   const userName = decodeURIComponent(rawUserName)
-  const tab = (await searchParams).tab === 'playlists' ? 'playlists' : 'videos'
+  const requested = (await searchParams).tab
+  const tab: TabId = isTab(requested) ? requested : 'videos'
 
   const channel = await loadChannel(userName)
   if (!channel) notFound()
 
   let videos: Page<VideoSummary> = { items: [], nextCursor: null }
   let playlists: ChannelPlaylist[] = []
+  let posts: Page<Post> = { items: [], nextCursor: null }
   try {
     if (tab === 'videos') videos = unwrapApiResponse<Page<VideoSummary>>(await channelApi.getVideos(channel.userName))
-    else playlists = unwrapApiResponse<ChannelPlaylist[]>(await channelApi.getPlaylists(channel.userName))
+    else if (tab === 'playlists') playlists = unwrapApiResponse<ChannelPlaylist[]>(await channelApi.getPlaylists(channel.userName))
+    else posts = unwrapApiResponse<Page<Post>>(await postApi.getChannelPosts(channel.userName))
   } catch { /* the tab shows its empty state */ }
 
   return (
@@ -69,9 +79,22 @@ export default async function ChannelPage({ params, searchParams }: ChannelPageP
       </nav>
 
       <section className="mt-8">
-        {tab === 'videos'
-          ? <PagedVideoGrid key={channel.userName} source={{ kind: 'channel', userName: channel.userName }} initial={videos} emptyMessage="This channel has no public videos yet." />
-          : <PlaylistGrid playlists={playlists} emptyMessage="This channel has no playlists yet." />}
+        {tab === 'videos' && (
+          <PagedVideoGrid key={channel.userName} source={{ kind: 'channel', userName: channel.userName }} initial={videos} emptyMessage="This channel has no public videos yet." />
+        )}
+        {tab === 'playlists' && <PlaylistGrid playlists={playlists} emptyMessage="This channel has no playlists yet." />}
+        {tab === 'posts' && (
+          <div className="max-w-2xl">
+            {/* only the channel owner gets a composer here */}
+            <PostFeed
+              key={channel.userName}
+              source={{ kind: 'channel', userName: channel.userName }}
+              initial={posts}
+              showComposer={channel.isOwner}
+              emptyMessage={channel.isOwner ? 'Share your first post with your subscribers.' : 'This channel has not posted anything yet.'}
+            />
+          </div>
+        )}
       </section>
     </div>
   )
