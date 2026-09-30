@@ -26,6 +26,7 @@ import type { ChangeUserInfo } from '@/lib/types/authType'
 import { toast } from 'sonner'
 import { getApiErrorMessage as getErrorMessage } from '@/lib/apiErrorMessage'
 import { DevicesPanel } from './DevicesPanel'
+import { EmailPanel } from './EmailPanel'
 
 export type SettingsClientUser = {
   avatarUrl?: string
@@ -440,6 +441,7 @@ export default function SettingsPageClient({ user: serverUser }: { user?: Settin
               </div>
             </div>
 
+            <EmailPanel />
             <DevicesPanel />
           </section>
         )}
