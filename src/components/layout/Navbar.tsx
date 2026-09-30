@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter, usePathname, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/auth/AuthProvider'
+import { NotificationBell } from '@/components/notifications/NotificationBell'
 import { Button } from '@/components/ui/button'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -138,7 +139,7 @@ export function Navbar() {
         <div className="flex items-center gap-1.5 flex-shrink-0">
           {user ? (
             <>
-              {/* Create: upload a video in the studio (notifications return with roadmap phase 4 step 7) */}
+              {/* Create: upload a video in the studio */}
               <Link
                 href="/studio/upload"
                 className="hidden h-9 items-center gap-2 rounded-full border border-line-default px-4 text-sm font-medium text-fg transition-colors hover:border-line-strong sm:inline-flex"
@@ -149,6 +150,7 @@ export function Navbar() {
               <Link href="/studio/upload" aria-label="Upload a video" className="inline-flex h-9 w-9 items-center justify-center rounded-full text-fg transition-colors hover:bg-elevated sm:hidden">
                 <Upload className="h-4 w-4" aria-hidden />
               </Link>
+              <NotificationBell />
               {/* Avatar Menu */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
