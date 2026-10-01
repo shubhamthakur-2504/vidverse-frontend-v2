@@ -1,7 +1,5 @@
-import Link from "next/link";
-import { Clapperboard } from "lucide-react";
-
-// the one layout for every auth screen (UI guide 6.5): a centred 400px card on the plain background
+// the one layout for every auth screen (UI guide 6.5): a 400px card on the
+// plain background. The (auth) route group centres it and puts the logo above.
 export function AuthCard({
   title,
   description,
@@ -14,37 +12,19 @@ export function AuthCard({
   footer?: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-bg px-4 pb-10 pt-24">
-      <div className="w-full max-w-[400px]">
-        <div className="rounded-lg border border-line bg-surface p-6 sm:p-8">
-          <Link
-            href="/"
-            className="mb-6 flex items-center gap-2 text-fg"
-            aria-label="VidVerse home"
-          >
-            <span className="flex h-8 w-8 items-center justify-center rounded-md bg-brand text-white">
-              <Clapperboard
-                className="h-4 w-4"
-                strokeWidth={1.75}
-                aria-hidden
-              />
-            </span>
-            <span className="text-lg font-semibold tracking-tight">
-              VidVerse
-            </span>
-          </Link>
-          <h2 className="text-xl font-semibold tracking-tight text-fg">
-            {title}
-          </h2>
-          {description && (
-            <p className="mt-1 text-sm text-fg-secondary">{description}</p>
-          )}
-          <div className="mt-6">{children}</div>
-        </div>
-        {footer && (
-          <p className="mt-6 text-center text-sm text-fg-secondary">{footer}</p>
+    <div className="w-full max-w-100">
+      <div className="rounded-lg border border-line bg-surface p-6 sm:p-8">
+        <h1 className="text-xl font-semibold tracking-tight text-fg">
+          {title}
+        </h1>
+        {description && (
+          <p className="mt-1 text-sm text-fg-secondary">{description}</p>
         )}
+        <div className="mt-6">{children}</div>
       </div>
+      {footer && (
+        <p className="mt-6 text-center text-sm text-fg-secondary">{footer}</p>
+      )}
     </div>
   );
 }

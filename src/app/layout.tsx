@@ -3,7 +3,6 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "../styles/globals.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
 import { ThemeProvider } from "@/components/theme/ThemeProvider";
-import { Navbar } from "@/components/layout/Navbar";
 import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
@@ -35,9 +34,14 @@ export default function RootLayout({
       <body className={`${geistSans.variable} ${geistMono.variable} font-sans`}>
         <ThemeProvider>
           <AuthProvider>
-            <Navbar />
-            <main>{children}</main>
-            <Toaster richColors position="bottom-right" />
+            {children}
+            {/* bottom-left on desktop keeps toasts clear of the header actions;
+                they centre on phones, above the tab bar */}
+            <Toaster
+              richColors
+              position="bottom-left"
+              mobileOffset={{ bottom: "84px" }}
+            />
           </AuthProvider>
         </ThemeProvider>
       </body>

@@ -86,12 +86,13 @@ export function NotificationBell() {
           aria-label={
             unread > 0 ? `Notifications, ${unread} unread` : "Notifications"
           }
-          className="relative inline-flex h-9 w-9 items-center justify-center rounded-full text-fg transition-colors hover:bg-elevated"
+          className="press relative inline-flex size-10 items-center justify-center rounded-full text-fg hover:bg-hover"
         >
-          <Bell className="h-5 w-5" aria-hidden />
+          <Bell className="size-5" strokeWidth={1.75} aria-hidden />
           {unread > 0 && (
+            // the ring separates the badge from the bell behind it
             <span
-              className="absolute -right-0.5 -top-0.5 min-w-[18px] rounded-full bg-brand px-1 text-center text-[11px] font-semibold leading-[18px] text-white"
+              className="absolute top-1 right-0.5 min-w-[18px] rounded-full border-2 border-bg bg-brand px-1 text-center text-xs leading-[14px] font-semibold text-white"
               aria-hidden
             >
               {unread > 99 ? "99+" : unread}

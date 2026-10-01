@@ -172,7 +172,6 @@
   --animate-rise: vv-rise var(--dur-slow) var(--ease-out) both;
   --animate-fade-in: vv-fade-in var(--dur-base) var(--ease-out) both;
   --animate-pop: vv-pop var(--dur-base) var(--ease-pop);
-  --animate-indeterminate: vv-indeterminate 1.2s var(--ease-out) infinite;
 }
 
 @keyframes vv-shimmer {
@@ -210,19 +209,6 @@
     transform: scale(1);
   }
 }
-/* the thin bar across the top of the page while a route loads */
-@keyframes vv-indeterminate {
-  0% {
-    transform: translateX(-100%) scaleX(0.4);
-  }
-  50% {
-    transform: translateX(0%) scaleX(0.7);
-  }
-  100% {
-    transform: translateX(100%) scaleX(0.4);
-  }
-}
-
 @layer base {
   * {
     @apply border-line;
