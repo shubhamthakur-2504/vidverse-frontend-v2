@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { VideoSummary } from "@/lib/types/videoType";
 import {
+  cn,
   formatAbsoluteDate,
   formatDuration,
   formatTimeAgo,
@@ -28,9 +29,11 @@ export function VideoCard({
   video,
   /** The first row is above the fold, so those thumbnails load eagerly. */
   priority = false,
+  className,
 }: {
   video: VideoSummary;
   priority?: boolean;
+  className?: string;
 }) {
   const { user } = useAuth();
   const [saveOpen, setSaveOpen] = useState(false);
@@ -48,7 +51,9 @@ export function VideoCard({
   };
 
   return (
-    <article className="group relative flex min-w-0 flex-col gap-3">
+    <article
+      className={cn("group relative flex min-w-0 flex-col gap-3", className)}
+    >
       <div className="relative aspect-video overflow-hidden rounded-lg bg-surface inset-ring inset-ring-line">
         <Image
           src={video.thumbnailUrl}

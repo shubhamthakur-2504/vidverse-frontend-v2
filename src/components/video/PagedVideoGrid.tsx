@@ -59,6 +59,9 @@ export function PagedVideoGrid({
 }) {
   const [videos, setVideos] = useState(initial.items);
   const [cursor, setCursor] = useState(initial.nextCursor);
+  // Cards from the server render still; only the ones that arrive later rise
+  // into place, so the movement means "more just loaded" rather than decoration.
+  const serverRendered = useRef(initial.items.length).current;
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sentinel = useRef<HTMLDivElement>(null);
@@ -117,7 +120,12 @@ export function PagedVideoGrid({
       ) : (
         <div className={VIDEO_GRID_CLASS}>
           {videos.map((video, index) => (
-            <VideoCard key={video._id} video={video} priority={index < 4} />
+            <VideoCard
+              key={video._id}
+              video={video}
+              priority={index < 4}
+              className={index >= serverRendered ? "animate-rise" : undefined}
+            />
           ))}
           {loading &&
             Array.from({ length: PENDING_SKELETONS }, (_, index) => (
