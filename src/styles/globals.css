@@ -1,21 +1,122 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
-/* Tailwind v4: define container with centering + max-width */
-@utility container {
-  margin-inline: auto;
-  padding-inline: 1rem;
-  max-width: 1280px;
-}
-
+/* Dark is the default. next-themes puts `light` or `dark` on <html> before paint,
+   so the two token sets below are the only place a colour is written down. */
 @custom-variant dark (&:is(.dark *));
 
+:root {
+  /* surfaces */
+  --bg: #0b0b0f;
+  --surface: #131318;
+  --elevated: #1b1b22;
+  --hover: #22222a;
+  --overlay: rgb(0 0 0 / 0.6);
+  /* borders */
+  --border-subtle: rgb(255 255 255 / 0.06);
+  --border-default: rgb(255 255 255 / 0.1);
+  --border-strong: rgb(255 255 255 / 0.18);
+  /* text */
+  --text: #ededf0;
+  --text-secondary: #a1a1aa;
+  --text-tertiary: #8b8b94;
+  --text-disabled: #5c5c66;
+  /* accent + semantic */
+  --accent-base: #7c3aed;
+  --accent-hover: #6d28d9;
+  --accent-fg: #a78bfa;
+  --accent-subtle: rgb(124 58 237 / 0.16);
+  --danger: #f87171;
+  --danger-bg: #dc2626;
+  --success: #4ade80;
+  --warning: #fbbf24;
+  --focus-ring: #a78bfa;
+  /* elevation (dark needs deep shadows to read at all) */
+  --shadow-menu: 0 8px 24px rgb(0 0 0 / 0.4);
+  --shadow-dialog: 0 24px 64px rgb(0 0 0 / 0.6);
+  /* the header blends into the page as it scrolls under content */
+  --header-bg: rgb(11 11 15 / 0.8);
+  --fade-to-bg: rgb(11 11 15 / 0);
+}
+
+.light {
+  --bg: #ffffff;
+  --surface: #f5f5f7;
+  --elevated: #ececf0;
+  --hover: #e2e2e7;
+  --overlay: rgb(0 0 0 / 0.4);
+  --border-subtle: rgb(0 0 0 / 0.08);
+  --border-default: rgb(0 0 0 / 0.12);
+  --border-strong: rgb(0 0 0 / 0.22);
+  --text: #0b0b0f;
+  --text-secondary: #52525b;
+  --text-tertiary: #6b6b74;
+  --text-disabled: #9a9aa3;
+  /* the accent fill is unchanged so the brand reads the same; only accent *text*
+     darkens, because #a78bfa on white is 2.1:1 */
+  --accent-base: #7c3aed;
+  --accent-hover: #6d28d9;
+  --accent-fg: #6d28d9;
+  --accent-subtle: rgb(124 58 237 / 0.1);
+  --danger: #dc2626;
+  --danger-bg: #dc2626;
+  --success: #15803d;
+  --warning: #b45309;
+  --focus-ring: #6d28d9;
+  --shadow-menu: 0 8px 24px rgb(0 0 0 / 0.1);
+  --shadow-dialog: 0 24px 64px rgb(0 0 0 / 0.16);
+  --header-bg: rgb(255 255 255 / 0.85);
+  --fade-to-bg: rgb(255 255 255 / 0);
+}
+
+:root {
+  /* shape and layout — the same in both themes */
+  --vv-radius-sm: 6px;
+  --vv-radius-md: 10px;
+  --vv-radius-lg: 14px;
+  --header-h: 56px;
+  --chipbar-h: 56px;
+  --sidebar-w: 240px;
+  --rail-w: 80px;
+  --mobilebar-h: 68px;
+  /* motion: durations here, curves in @theme so Tailwind's ease-* utilities match */
+  --dur-fast: 120ms;
+  --dur-base: 200ms;
+  --dur-slow: 300ms;
+
+  /* shadcn mapping, so components/ui/* follow the tokens above */
+  --background: var(--bg);
+  --foreground: var(--text);
+  --card: var(--surface);
+  --card-foreground: var(--text);
+  --popover: var(--elevated);
+  --popover-foreground: var(--text);
+  --primary: var(--accent-base);
+  --primary-foreground: #ffffff;
+  --secondary: var(--elevated);
+  --secondary-foreground: var(--text);
+  --muted: var(--surface);
+  --muted-foreground: var(--text-tertiary);
+  --accent: var(
+    --hover
+  ); /* shadcn "accent" is the hover fill, not the brand colour */
+  --accent-foreground: var(--text);
+  --destructive: var(--danger-bg);
+  --border: var(--border-subtle);
+  --input: var(--border-default);
+  --ring: var(--focus-ring);
+  --radius: var(--vv-radius-md);
+}
+
 @theme inline {
-  /* design tokens from docs/UI_DESIGN_GUIDE.md (bg-surface, text-fg-secondary, border-line, bg-brand, ...).
-     New pages use these; existing pages move over in the phase 5 UI overhaul. */
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
   --color-bg: var(--bg);
   --color-surface: var(--surface);
   --color-elevated: var(--elevated);
+  --color-hover: var(--hover);
+  --color-overlay: var(--overlay);
   --color-fg: var(--text);
   --color-fg-secondary: var(--text-secondary);
   --color-fg-tertiary: var(--text-tertiary);
@@ -31,656 +132,204 @@
   --color-danger-bg: var(--danger-bg);
   --color-success: var(--success);
   --color-warning: var(--warning);
+
+  /* shadcn */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-inter), var(--font-geist-sans), system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  /* three radii only; rounded-xl and up are deliberately left undefined */
+  --radius-sm: var(--vv-radius-sm);
+  --radius-md: var(--vv-radius-md);
+  --radius-lg: var(--vv-radius-lg);
+
+  --shadow-menu: var(--shadow-menu);
+  --shadow-dialog: var(--shadow-dialog);
 }
 
-:root {
-  /* UI guide tokens: contrast ratios in docs/UI_DESIGN_GUIDE.md section 3.1 (all text levels pass WCAG AA) */
-  --bg: #0b0b0f;
-  --surface: #131318;
-  --elevated: #1b1b22;
-  --border-subtle: rgb(255 255 255 / 0.06);
-  --border-default: rgb(255 255 255 / 0.1);
-  --border-strong: rgb(255 255 255 / 0.18);
-  --text: #ededf0;
-  --text-secondary: #a1a1aa;
-  --text-tertiary: #8b8b94;
-  --text-disabled: #5c5c66;
-  --accent-base: #7c3aed;
-  --accent-hover: #6d28d9;
-  --accent-fg: #a78bfa;
-  --accent-subtle: rgb(124 58 237 / 0.14);
-  --danger: #f87171;
-  --danger-bg: #dc2626;
-  --success: #4ade80;
-  --warning: #fbbf24;
+@theme {
+  /* overrides Tailwind's own curves so `ease-out` / `ease-in` are our curves */
+  --ease-out: cubic-bezier(0.2, 0, 0, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+  --ease-pop: cubic-bezier(0.34, 1.4, 0.64, 1);
 
-  --radius: 0.75rem;
-  --background: #0a0a0f;
-  --foreground: #f0f0f8;
-  --card: #111118;
-  --card-foreground: #f0f0f8;
-  --popover: #111118;
-  --popover-foreground: #f0f0f8;
-  --primary: #7c3aed;
-  --primary-foreground: #ffffff;
-  --secondary: #1a1a2e;
-  --secondary-foreground: #a0a0b8;
-  --muted: #16213e;
-  --muted-foreground: #6b7280;
-  --accent: #7c3aed;
-  --accent-foreground: #ffffff;
-  --destructive: #ef4444;
-  --border: rgba(255, 255, 255, 0.06);
-  --input: rgba(255, 255, 255, 0.08);
-  --ring: rgba(124, 58, 237, 0.5);
-  --chart-1: #7c3aed;
-  --chart-2: #06b6d4;
-  --chart-3: #f59e0b;
-  --chart-4: #10b981;
-  --chart-5: #ef4444;
-  --sidebar: #0d0d1a;
-  --sidebar-foreground: #f0f0f8;
-  --sidebar-primary: #7c3aed;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1a1a2e;
-  --sidebar-accent-foreground: #f0f0f8;
-  --sidebar-border: rgba(255, 255, 255, 0.06);
-  --sidebar-ring: rgba(124, 58, 237, 0.5);
-
-  /* VidVerse Custom Tokens */
-  --vv-purple: #7c3aed;
-  --vv-violet: #8b5cf6;
-  --vv-cyan: #06b6d4;
-  --vv-pink: #ec4899;
-  --vv-surface-1: #0d0d1a;
-  --vv-surface-2: #111118;
-  --vv-surface-3: #1a1a2e;
-  --vv-glass-bg: rgba(17, 17, 24, 0.7);
-  --vv-glass-border: rgba(255, 255, 255, 0.07);
-  --vv-glass-hover: rgba(255, 255, 255, 0.04);
-  --vv-glow-purple: rgba(124, 58, 237, 0.3);
-  --vv-glow-cyan: rgba(6, 182, 212, 0.3);
+  --animate-shimmer: vv-shimmer 1.6s linear infinite;
+  --animate-rise: vv-rise var(--dur-slow) var(--ease-out) both;
+  --animate-fade-in: vv-fade-in var(--dur-base) var(--ease-out) both;
+  --animate-pop: vv-pop var(--dur-base) var(--ease-pop);
+  --animate-indeterminate: vv-indeterminate 1.2s var(--ease-out) infinite;
 }
 
-/* Dark mode overrides (since layout always has dark class) */
-.dark {
-  --background: #0a0a0f;
-  --foreground: #f0f0f8;
-  --card: #111118;
-  --card-foreground: #f0f0f8;
-  --popover: #111118;
-  --popover-foreground: #f0f0f8;
-  --primary: #7c3aed;
-  --primary-foreground: #ffffff;
-  --secondary: #1a1a2e;
-  --secondary-foreground: #a0a0b8;
-  --muted: #16213e;
-  --muted-foreground: #6b7280;
-  --accent: #7c3aed;
-  --accent-foreground: #ffffff;
-  --destructive: #ef4444;
-  --border: rgba(255, 255, 255, 0.06);
-  --input: rgba(255, 255, 255, 0.08);
-  --ring: rgba(124, 58, 237, 0.5);
-  --sidebar: #0d0d1a;
-  --sidebar-foreground: #f0f0f8;
-  --sidebar-primary: #7c3aed;
-  --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: #1a1a2e;
-  --sidebar-accent-foreground: #f0f0f8;
-  --sidebar-border: rgba(255, 255, 255, 0.06);
-  --sidebar-ring: rgba(124, 58, 237, 0.5);
+@keyframes vv-shimmer {
+  to {
+    transform: translateX(100%);
+  }
+}
+@keyframes vv-rise {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes vv-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* the like/subscribe confirmation nudge */
+@keyframes vv-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+/* the thin bar across the top of the page while a route loads */
+@keyframes vv-indeterminate {
+  0% {
+    transform: translateX(-100%) scaleX(0.4);
+  }
+  50% {
+    transform: translateX(0%) scaleX(0.7);
+  }
+  100% {
+    transform: translateX(100%) scaleX(0.4);
+  }
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
-    box-sizing: border-box;
-  }
-
-  html {
-    scroll-behavior: smooth;
+    @apply border-line;
   }
 
   body {
-    background-color: var(--background);
-    color: var(--foreground);
-    font-family: "Inter", var(--font-geist-sans), system-ui, sans-serif;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-    overflow-x: hidden;
+    @apply bg-bg text-fg font-sans antialiased;
+    font-size: 14px;
+    line-height: 22px;
   }
 
-  /* Custom scrollbar */
-  ::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
   }
-  ::-webkit-scrollbar-track {
-    background: var(--vv-surface-1);
+
+  p {
+    text-wrap: pretty;
   }
-  ::-webkit-scrollbar-thumb {
-    background: rgba(124, 58, 237, 0.4);
-    border-radius: 999px;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    background: rgba(124, 58, 237, 0.7);
+
+  :focus-visible {
+    outline: 2px solid var(--focus-ring);
+    outline-offset: 2px;
   }
 
   ::selection {
-    background: rgba(124, 58, 237, 0.35);
-    color: #fff;
+    background: var(--accent-subtle);
+    color: var(--text);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border: 3px solid transparent;
+    background-clip: content-box;
+    border-radius: 9999px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--text-tertiary);
+    border: 3px solid transparent;
+    background-clip: content-box;
   }
 }
 
-/* ============================================================
-   GLASSMORPHISM UTILITIES
-   ============================================================ */
-.glass {
-  background: var(--vv-glass-bg);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  border: 1px solid var(--vv-glass-border);
+/* Tailwind v4 drops the v3 `container`; ours is only ever a reading-width cap. */
+@utility container {
+  margin-inline: auto;
+  padding-inline: 1rem;
+  max-width: 1280px;
 }
 
-.glass-card {
-  background: linear-gradient(
-    135deg,
-    rgba(17, 17, 24, 0.9) 0%,
-    rgba(13, 13, 26, 0.85) 100%
-  );
-  backdrop-filter: blur(20px) saturate(150%);
-  -webkit-backdrop-filter: blur(20px) saturate(150%);
-  border: 1px solid rgba(255, 255, 255, 0.07);
-  box-shadow:
-    0 8px 32px rgba(0, 0, 0, 0.4),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.glass-hover {
-  transition: all 0.2s ease;
-}
-.glass-hover:hover {
-  background: var(--vv-glass-hover);
-  border-color: rgba(255, 255, 255, 0.12);
-}
-
-/* ============================================================
-   GRADIENT UTILITIES
-   ============================================================ */
-.gradient-text {
-  background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 50%, #ec4899 100%);
-  background-size: 200% auto;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  animation: gradient-shift 4s ease infinite;
-}
-
-.gradient-text-static {
-  background: linear-gradient(135deg, #8b5cf6 0%, #06b6d4 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-}
-
-.gradient-border {
-  position: relative;
-}
-.gradient-border::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(135deg, #7c3aed, #06b6d4, #ec4899);
-  -webkit-mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-}
-
-.btn-gradient {
-  background: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%);
+/* A loading placeholder shaped like the content it stands in for. */
+@utility skeleton {
   position: relative;
   overflow: hidden;
-  transition: all 0.3s ease;
-}
-.btn-gradient::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, #8b5cf6 0%, #22d3ee 100%);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-}
-.btn-gradient:hover::before {
-  opacity: 1;
-}
-.btn-gradient > * {
-  position: relative;
-  z-index: 1;
+  background: var(--elevated);
+  border-radius: var(--vv-radius-sm);
 }
 
-/* ============================================================
-   GLOW EFFECTS
-   ============================================================ */
-.glow-purple {
-  box-shadow:
-    0 0 20px rgba(124, 58, 237, 0.4),
-    0 0 60px rgba(124, 58, 237, 0.15);
-}
-.glow-cyan {
-  box-shadow:
-    0 0 20px rgba(6, 182, 212, 0.4),
-    0 0 60px rgba(6, 182, 212, 0.15);
-}
-.glow-text-purple {
-  text-shadow: 0 0 20px rgba(124, 58, 237, 0.8);
-}
-
-/* ============================================================
-   ANIMATIONS
-   ============================================================ */
-@keyframes gradient-shift {
-  0% {
-    background-position: 0% center;
-  }
-  50% {
-    background-position: 100% center;
-  }
-  100% {
-    background-position: 0% center;
-  }
-}
-
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0px) rotate(0deg);
-  }
-  33% {
-    transform: translateY(-20px) rotate(2deg);
-  }
-  66% {
-    transform: translateY(-10px) rotate(-2deg);
-  }
-}
-
-@keyframes pulse-glow {
-  0%,
-  100% {
-    box-shadow: 0 0 20px rgba(124, 58, 237, 0.3);
-  }
-  50% {
-    box-shadow:
-      0 0 40px rgba(124, 58, 237, 0.6),
-      0 0 80px rgba(124, 58, 237, 0.2);
-  }
-}
-
-@keyframes shimmer {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
-}
-
-@keyframes spin-slow {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@keyframes orbit {
-  from {
-    transform: rotate(0deg) translateX(40px) rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg) translateX(40px) rotate(-360deg);
-  }
-}
-
-@keyframes fade-up {
-  from {
-    opacity: 0;
-    transform: translateY(24px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes scale-in {
-  from {
-    opacity: 0;
-    transform: scale(0.85);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-@keyframes slide-right {
-  from {
-    opacity: 0;
-    transform: translateX(-24px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes border-flow {
-  0% {
-    background-position: 0% 50%;
-  }
-  50% {
-    background-position: 100% 50%;
-  }
-  100% {
-    background-position: 0% 50%;
-  }
-}
-
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-.animate-pulse-glow {
-  animation: pulse-glow 2s ease-in-out infinite;
-}
-.animate-spin-slow {
-  animation: spin-slow 8s linear infinite;
-}
-.animate-fade-up {
-  animation: fade-up 0.6s ease forwards;
-}
-.animate-scale-in {
-  animation: scale-in 0.4s ease forwards;
-}
-
-/* ============================================================
-   SHIMMER SKELETON
-   ============================================================ */
-.shimmer-container {
-  position: relative;
-  overflow: hidden;
-  background: rgba(255, 255, 255, 0.04);
-}
-.shimmer-container::after {
+.skeleton::after {
   content: "";
   position: absolute;
   inset: 0;
   transform: translateX(-100%);
   background: linear-gradient(
     90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.04) 50%,
-    transparent 100%
+    transparent,
+    var(--border-default),
+    transparent
   );
-  animation: shimmer 1.8s infinite;
+  animation: var(--animate-shimmer);
 }
 
-/* Legacy shimmer class compatibility */
-.shimmer {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(255, 255, 255, 0.05) 50%,
-    transparent 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 1.8s infinite;
-}
-
-/* ============================================================
-   VIDEO PLAYER OVERRIDES
-   ============================================================ */
-.vv-progress-bar {
-  position: relative;
-  height: 4px;
-  background: rgba(255, 255, 255, 0.15);
-  border-radius: 999px;
-  cursor: pointer;
-  transition: height 0.2s ease;
-}
-.vv-progress-bar:hover {
-  height: 6px;
-}
-.vv-progress-fill {
-  height: 100%;
-  background: linear-gradient(90deg, #7c3aed, #06b6d4);
-  border-radius: 999px;
-  position: relative;
-}
-.vv-progress-fill::after {
-  content: "";
-  position: absolute;
-  right: -6px;
-  top: 50%;
-  transform: translateY(-50%) scale(0);
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 0 8px rgba(124, 58, 237, 0.8);
-  transition: transform 0.2s ease;
-}
-.vv-progress-bar:hover .vv-progress-fill::after {
-  transform: translateY(-50%) scale(1);
-}
-
-/* ============================================================
-   CARD HOVER EFFECTS
-   ============================================================ */
-.video-card-hover {
-  transition:
-    transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-    box-shadow 0.3s ease;
-}
-.video-card-hover:hover {
-  transform: translateY(-6px);
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.5),
-    0 0 30px rgba(124, 58, 237, 0.1);
-}
-
-/* ============================================================
-   TYPOGRAPHY ENHANCEMENTS
-   ============================================================ */
-.text-balance {
-  text-wrap: balance;
-}
-
-/* ============================================================
-   FOCUS STYLES
-   ============================================================ */
-*:focus-visible {
-  outline: 2px solid rgba(124, 58, 237, 0.6);
-  outline-offset: 2px;
-}
-
-/* ============================================================
-   BACKDROP & OVERLAY HELPERS
-   ============================================================ */
-.backdrop-gradient {
-  background: linear-gradient(
-    to bottom,
-    transparent 0%,
-    rgba(10, 10, 15, 0.8) 60%,
-    rgba(10, 10, 15, 1) 100%
-  );
-}
-
-.noise-overlay {
-  position: relative;
-}
-.noise-overlay::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
-  pointer-events: none;
-  opacity: 0.5;
-}
-
-/* ============================================================
-   ORBS / AMBIENT LIGHT
-   ============================================================ */
-.orb {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(60px);
-  pointer-events: none;
-  will-change: transform;
-}
-.orb-purple {
-  background: radial-gradient(
-    circle,
-    rgba(124, 58, 237, 0.4) 0%,
-    transparent 70%
-  );
-}
-.orb-cyan {
-  background: radial-gradient(
-    circle,
-    rgba(6, 182, 212, 0.3) 0%,
-    transparent 70%
-  );
-}
-.orb-pink {
-  background: radial-gradient(
-    circle,
-    rgba(236, 72, 153, 0.25) 0%,
-    transparent 70%
-  );
-}
-
-/* ============================================================
-   CATEGORY PILL TABS
-   ============================================================ */
-.category-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 6px 16px;
-  border-radius: 999px;
-  font-size: 0.875rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.04);
-  color: rgba(255, 255, 255, 0.6);
-  white-space: nowrap;
-  user-select: none;
-}
-.category-pill:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.9);
-  border-color: rgba(255, 255, 255, 0.15);
-}
-.category-pill.active {
-  background: linear-gradient(
-    135deg,
-    rgba(124, 58, 237, 0.3),
-    rgba(6, 182, 212, 0.2)
-  );
-  border-color: rgba(124, 58, 237, 0.5);
-  color: #fff;
-  box-shadow: 0 0 20px rgba(124, 58, 237, 0.2);
-}
-
-/* ============================================================
-   SUBSCRIBE BUTTON STATES
-   ============================================================ */
-.btn-subscribe {
-  background: linear-gradient(135deg, #7c3aed, #06b6d4);
-  color: white;
-  transition: all 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-.btn-subscribe:hover {
-  box-shadow: 0 4px 20px rgba(124, 58, 237, 0.5);
-  transform: translateY(-1px);
-}
-.btn-subscribed {
-  background: rgba(255, 255, 255, 0.08);
-  color: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  transition: all 0.3s ease;
-}
-.btn-subscribed:hover {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.3);
-  color: #fca5a5;
-}
-
-/* ============================================================
-   UTILITIES
-   ============================================================ */
-.no-scrollbar {
+@utility no-scrollbar {
   scrollbar-width: none;
   -ms-overflow-style: none;
-}
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
-/* ============================================================
-   REDUCED MOTION (docs/UI_DESIGN_GUIDE.md section 3.7)
-   ============================================================ */
+/* Press feedback. Pointer only: a touch tap already gives its own feedback, and
+   the transform fights with scrolling. */
+@utility press {
+  transition:
+    transform var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out),
+    border-color var(--dur-fast) var(--ease-out),
+    color var(--dur-fast) var(--ease-out),
+    opacity var(--dur-fast) var(--ease-out);
+
+  @media (hover: hover) {
+    &:active {
+      transform: scale(0.97);
+    }
+  }
+}
+
+/* Motion is feedback, so it all stops when the reader asked for less of it. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

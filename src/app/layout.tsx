@@ -1,24 +1,20 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "../styles/globals.css";
 import { AuthProvider } from "@/components/auth/AuthProvider";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { Navbar } from "@/components/layout/Navbar";
 import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-});
-
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700", "800", "900"],
   display: "swap",
 });
 
@@ -33,15 +29,17 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="dark">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} ${inter.variable} antialiased font-sans`}
-      >
-        <AuthProvider>
-          <Navbar />
-          <main>{children}</main>
-          <Toaster richColors position="top-right" theme="dark" />
-        </AuthProvider>
+    // next-themes swaps the class on <html> before the first paint, which the
+    // server render cannot know about
+    <html lang="en" suppressHydrationWarning>
+      <body className={`${geistSans.variable} ${geistMono.variable} font-sans`}>
+        <ThemeProvider>
+          <AuthProvider>
+            <Navbar />
+            <main>{children}</main>
+            <Toaster richColors position="bottom-right" />
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
