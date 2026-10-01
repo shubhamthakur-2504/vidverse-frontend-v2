@@ -1,32 +1,30 @@
-export function VideoGridSkeleton() {
+import { Skeleton } from "@/components/ui/skeleton";
+
+import { VIDEO_GRID_CLASS } from "./gridClass";
+
+/** One placeholder card, shaped exactly like a real one so nothing shifts. */
+export function VideoCardSkeleton() {
   return (
-    <div>
-      {/* Header skeleton */}
-      <div className="flex items-center gap-3 mb-6">
-        <div className="w-4 h-4 rounded shimmer-container" />
-        <div className="w-28 h-4 rounded-full shimmer-container" />
-        <div className="flex-1 h-px bg-white/[0.04]" />
-        <div className="w-16 h-3 rounded-full shimmer-container" />
+    <div className="flex min-w-0 flex-col gap-3">
+      <Skeleton className="aspect-video w-full rounded-lg" />
+      <div className="flex gap-3">
+        <Skeleton className="size-9 shrink-0 rounded-full" />
+        <div className="flex flex-1 flex-col gap-2 pt-0.5">
+          <Skeleton className="h-3.5 w-11/12" />
+          <Skeleton className="h-3.5 w-2/3" />
+          <Skeleton className="h-3 w-2/5" />
+        </div>
       </div>
+    </div>
+  );
+}
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-x-5 gap-y-8">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <div key={i} className="space-y-3">
-            {/* Thumbnail Skeleton */}
-            <div className="aspect-video rounded-2xl shimmer-container border border-white/[0.04]" />
-
-            {/* Info skeleton */}
-            <div className="flex gap-3 px-0.5">
-              <div className="h-8 w-8 rounded-full shimmer-container flex-shrink-0 mt-0.5" />
-              <div className="flex-1 space-y-2 pt-0.5">
-                <div className="h-3.5 shimmer-container rounded-md w-full" />
-                <div className="h-3 shimmer-container rounded-md w-3/4" />
-                <div className="h-2.5 shimmer-container rounded-md w-1/2" />
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+export function VideoGridSkeleton({ count = 8 }: { count?: number }) {
+  return (
+    <div className={VIDEO_GRID_CLASS}>
+      {Array.from({ length: count }, (_, index) => (
+        <VideoCardSkeleton key={index} />
+      ))}
     </div>
   );
 }

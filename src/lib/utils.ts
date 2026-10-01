@@ -5,13 +5,31 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+const compact = new Intl.NumberFormat("en", {
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+const exact = new Intl.NumberFormat("en");
+const longDate = new Intl.DateTimeFormat("en", { dateStyle: "long" });
+
+/** 1234 becomes "1.2K". For counts shown beside a noun, not in prose. */
 export function formatViews(views: number): string {
-  if (views >= 1000000) {
-    return `${(views / 1000000).toFixed(1)}M`;
-  } else if (views >= 1000) {
-    return `${(views / 1000).toFixed(1)}K`;
-  }
-  return views.toString();
+  return compact.format(views);
+}
+
+/** "12,345" — for the one place a view count is spelled out, under the player. */
+export function formatCount(value: number): string {
+  return exact.format(value);
+}
+
+/** "1 comment" / "2 comments", for nouns that pluralise with an "s". */
+export function plural(count: number, noun: string): string {
+  return `${exact.format(count)} ${noun}${count === 1 ? "" : "s"}`;
+}
+
+/** The full date, for the title of a relative timestamp. */
+export function formatAbsoluteDate(date: string | Date): string {
+  return longDate.format(new Date(date));
 }
 
 export function formatDuration(seconds: number): string {
