@@ -40,7 +40,7 @@ function RailNav() {
                   <Icon
                     className="size-5"
                     strokeWidth={1.75}
-                    fill={active ? "currentColor" : "none"}
+                    fill={active && item.fillable ? "currentColor" : "none"}
                     aria-hidden
                   />
                 </span>

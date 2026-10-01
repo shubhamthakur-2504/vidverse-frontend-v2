@@ -249,8 +249,25 @@ function Description({
     </p>
   );
 
+  // Two lines at this width is roughly 160 characters. Measuring the real
+  // overflow would be exact, but it would also mean a layout read on every
+  // render to decide whether to show one word.
+  const clamps =
+    video.description.length > 160 || video.description.includes("\n");
+
   if (!video.description) {
     return <div className="rounded-lg bg-surface p-3">{meta}</div>;
+  }
+
+  if (!clamps) {
+    return (
+      <div className="rounded-lg bg-surface p-3">
+        {meta}
+        <p className="mt-2 text-sm whitespace-pre-wrap text-fg-secondary">
+          {video.description}
+        </p>
+      </div>
+    );
   }
 
   return (

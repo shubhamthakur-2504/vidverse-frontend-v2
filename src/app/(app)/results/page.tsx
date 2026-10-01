@@ -9,6 +9,8 @@ import type { VideoSummary } from "@/lib/types/videoType";
 import type { Page } from "@/lib/types/apiType";
 import { PagedVideoGrid } from "@/components/video/PagedVideoGrid";
 import { SearchFilterBar } from "@/components/search/SearchFilterBar";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 
 type ResultsPageProps = {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -57,40 +59,32 @@ export default async function ResultsPage({ searchParams }: ResultsPageProps) {
             initial={results}
             layout="list"
             emptyMessage={
-              <div className="flex flex-col items-center">
-                <SearchX
-                  className="h-12 w-12 text-fg-tertiary"
-                  strokeWidth={1.75}
-                  aria-hidden
-                />
-                <h2 className="mt-4 text-base font-semibold text-fg">
-                  {failed
-                    ? "Search is not available right now"
-                    : "No results found"}
-                </h2>
-                <p className="mt-1">
-                  {failed
+              <EmptyState
+                icon={SearchX}
+                title={
+                  failed
+                    ? "Search isn't available right now"
+                    : "No results found"
+                }
+                description={
+                  failed
                     ? "Try again in a moment."
                     : hasFilters
-                      ? "Try removing some filters or searching for something else."
-                      : "Try different keywords."}
-                </p>
-                {hasFilters && !failed ? (
-                  <Link
-                    href={resultsHref({ q: filters.q })}
-                    className="mt-4 font-medium text-brand-fg hover:underline"
-                  >
-                    Clear filters
-                  </Link>
-                ) : (
-                  <Link
-                    href="/"
-                    className="mt-4 font-medium text-brand-fg hover:underline"
-                  >
-                    Clear search
-                  </Link>
-                )}
-              </div>
+                      ? "Try removing some filters, or searching for something else."
+                      : "Try different keywords."
+                }
+                action={
+                  <Button asChild variant="secondary">
+                    {hasFilters && !failed ? (
+                      <Link href={resultsHref({ q: filters.q })}>
+                        Clear filters
+                      </Link>
+                    ) : (
+                      <Link href="/">Clear search</Link>
+                    )}
+                  </Button>
+                }
+              />
             }
           />
         </div>

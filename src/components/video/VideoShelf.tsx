@@ -37,9 +37,9 @@ export function VideoShelf({
           </Link>
         )}
       </div>
-      <ul className="no-scrollbar -mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 md:-mx-6 md:px-6 xl:-mx-8 xl:px-8">
+      <ul className="no-scrollbar flex snap-x gap-4 overflow-x-auto">
         {videos.map((video) => (
-          <li key={video._id} className="w-70 shrink-0 snap-start">
+          <li key={video._id} className="w-64 shrink-0 snap-start">
             <VideoCard video={video} />
           </li>
         ))}
