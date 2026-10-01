@@ -1,129 +1,123 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
+import { Clapperboard } from "lucide-react";
+import Link from "next/link";
+
 import { VideoPlayer } from "@/components/video/VideoPlayer";
 import { VideoInfo } from "@/components/video/VideoInfo";
 import { CommentSection } from "@/components/video/CommentSection";
 import { RelatedVideos } from "@/components/video/RelatedVideos";
 import { VideoPlayerSkeleton } from "@/components/video/VideoPlayerSkeleton";
+import { Button } from "@/components/ui/button";
+import { EmptyState } from "@/components/ui/empty-state";
 import { videoApi } from "@/lib/api/server/videoApi";
 import { unwrapApiResponse } from "@/lib/unwrapApiRes";
 import { Video, WatchVideo } from "@/lib/types/videoType";
-import Link from "next/link";
-import { Home, ChevronRight } from "lucide-react";
 
-type WatchPageParams = {
-  params: { videoId: string } | Promise<{ videoId: string }>;
+type WatchPageProps = { params: Promise<{ videoId: string }> };
+
+const loadVideo = async (videoId: string): Promise<WatchVideo | null> => {
+  try {
+    return unwrapApiResponse<WatchVideo>(
+      await videoApi.getVideoDetails(videoId)
+    );
+  } catch {
+    return null;
+  }
 };
 
-export default async function WatchPage({ params }: WatchPageParams) {
-  const resolvedParams = await Promise.resolve(params);
-  const videoId: string = resolvedParams.videoId;
+// shared links show the title, description and thumbnail
+export async function generateMetadata({
+  params,
+}: WatchPageProps): Promise<Metadata> {
+  const { videoId } = await params;
+  const video = await loadVideo(videoId);
+  if (!video) return { title: "Video not found · VidVerse" };
 
-  // the watch payload (video, counts, viewer state) and "up next" are fetched in parallel on the server
-  const [detailsRes, relatedRes] = await Promise.allSettled([
-    videoApi.getVideoDetails(videoId),
-    videoApi.getRelated(videoId),
+  const description = video.description?.slice(0, 200) || undefined;
+  return {
+    title: `${video.title} · VidVerse`,
+    description,
+    openGraph: {
+      type: "video.other",
+      title: video.title,
+      description,
+      images: video.thumbnailUrl ? [video.thumbnailUrl] : undefined,
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: video.title,
+      description,
+      images: video.thumbnailUrl ? [video.thumbnailUrl] : undefined,
+    },
+  };
+}
+
+export default async function WatchPage({ params }: WatchPageProps) {
+  const { videoId } = await params;
+
+  // the watch payload and "up next" are fetched in parallel on the server
+  const [videoData, relatedRes] = await Promise.all([
+    loadVideo(videoId),
+    videoApi.getRelated(videoId).catch(() => null),
   ]);
-
-  let videoData: WatchVideo | null = null;
-  try {
-    if (detailsRes.status === "rejected") throw detailsRes.reason;
-    videoData = unwrapApiResponse<WatchVideo>(detailsRes.value);
-  } catch (error: unknown) {
-    console.error(
-      "Failed to fetch video details.",
-      error instanceof Error ? error.message : error
-    );
-  }
 
   let relatedVideos: Video[] = [];
   try {
-    if (relatedRes.status === "fulfilled")
-      relatedVideos = unwrapApiResponse<Video[]>(relatedRes.value) ?? [];
+    if (relatedRes)
+      relatedVideos = unwrapApiResponse<Video[]>(relatedRes) ?? [];
   } catch {
-    relatedVideos = [];
+    /* the sidebar shows its own empty state */
   }
 
   if (videoData == null) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4">
-        <div className="text-center space-y-4 max-w-md">
-          <div className="w-20 h-20 rounded-3xl glass-card flex items-center justify-center mx-auto">
-            <span className="text-4xl">📹</span>
-          </div>
-          <h2 className="text-2xl font-bold text-white">Video not found</h2>
-          <p className="text-white/40 text-sm leading-relaxed">
-            This video may have been removed, made private, or the link might be
-            incorrect.
-          </p>
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 mt-4 px-6 py-2.5 rounded-full btn-gradient text-white text-sm font-semibold"
-          >
-            <Home className="h-4 w-4" />
-            <span>Back to Home</span>
-          </Link>
-        </div>
+      <div className="flex min-h-[70vh] items-center justify-center px-4">
+        <EmptyState
+          icon={Clapperboard}
+          title="Video not found"
+          description="It may have been removed, made private, or the link may be wrong."
+          action={
+            <Button asChild>
+              <Link href="/">Go to home</Link>
+            </Button>
+          }
+        />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen pb-12">
-      {/* Ambient background glow */}
-      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-        <div className="orb orb-purple w-[700px] h-[700px] -top-80 -left-64 opacity-30" />
-        <div className="orb orb-cyan w-[500px] h-[500px] top-1/2 right-0 opacity-20" />
-      </div>
+    <div className="mx-auto max-w-400 px-4 py-4 pb-12 md:px-6 xl:px-8">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_400px] xl:gap-8">
+        <div className="min-w-0 space-y-4">
+          <Suspense fallback={<VideoPlayerSkeleton />}>
+            <div className="overflow-hidden rounded-lg bg-black">
+              <VideoPlayer
+                key={videoId}
+                videoUrl={videoData.videoFileUrl}
+                thumbnail={videoData.thumbnailUrl}
+                videoId={videoId}
+              />
+            </div>
 
-      <div className="container mx-auto px-4 max-w-[1440px]">
-        {/* Breadcrumb */}
-        <nav className="flex items-center gap-2 text-xs text-white/25 py-4 mb-2">
-          <Link href="/" className="hover:text-white/60 transition-colors">
-            Home
-          </Link>
-          <ChevronRight className="h-3 w-3" />
-          <span className="text-white/50 truncate max-w-xs">
-            {videoData.title}
-          </span>
-        </nav>
+            <VideoInfo video={videoData} />
 
-        {/* Main layout */}
-        <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-8">
-          {/* Left — Primary content */}
-          <div className="space-y-5 min-w-0">
-            <Suspense fallback={<VideoPlayerSkeleton />}>
-              <>
-                {/* Video Player */}
-                <div className="rounded-2xl overflow-hidden shadow-2xl shadow-black/60">
-                  <VideoPlayer
-                    key={videoId}
-                    videoUrl={videoData.videoFileUrl}
-                    thumbnail={videoData.thumbnailUrl}
-                    videoId={videoId}
-                  />
-                </div>
+            <hr className="border-0 border-t border-line" />
 
-                {/* Video Info */}
-                <VideoInfo video={videoData} />
-
-                {/* Divider */}
-                <div className="h-px bg-white/[0.05]" />
-
-                {/* Comments */}
-                <CommentSection
-                  targetId={videoId}
-                  targetType="Video"
-                  isContentOwner={videoData.viewer.isOwner}
-                />
-              </>
-            </Suspense>
-          </div>
-
-          {/* Right — Sidebar */}
-          <div className="xl:sticky xl:top-20 xl:self-start xl:max-h-[calc(100vh-6rem)] xl:overflow-y-auto pr-0.5">
-            <RelatedVideos videos={relatedVideos} />
-          </div>
+            <CommentSection
+              targetId={videoId}
+              targetType="Video"
+              isContentOwner={videoData.viewer.isOwner}
+              contentOwnerId={videoData.owner._id}
+              totalComments={videoData.stats.comments}
+            />
+          </Suspense>
         </div>
+
+        <aside className="min-w-0 xl:sticky xl:top-[calc(var(--header-h)+1rem)] xl:self-start">
+          <RelatedVideos videos={relatedVideos} />
+        </aside>
       </div>
     </div>
   );

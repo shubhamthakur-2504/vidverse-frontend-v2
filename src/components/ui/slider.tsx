@@ -4,9 +4,12 @@ import * as React from "react";
 import * as SliderPrimitive from "@radix-ui/react-slider";
 import { cn } from "@/lib/utils";
 
+// Only the player uses this, over video, so its colours are white on black
+// rather than page tokens.
 const Slider = React.forwardRef<
   React.ComponentRef<typeof SliderPrimitive.Root>,
-  // thumbLabel names the draggable thumb for screen readers (Radix reads the label from the thumb, not the root)
+  // thumbLabel names the draggable thumb for screen readers (Radix reads the
+  // label from the thumb, not from the root)
   React.ComponentPropsWithoutRef<typeof SliderPrimitive.Root> & {
     thumbLabel?: string;
   }
@@ -14,18 +17,18 @@ const Slider = React.forwardRef<
   <SliderPrimitive.Root
     ref={ref}
     className={cn(
-      "relative flex w-full touch-none select-none items-center",
+      "relative flex w-full touch-none items-center select-none",
       className
     )}
     {...props}
   >
-    <SliderPrimitive.Track className="relative h-1.5 w-full grow overflow-hidden rounded-full bg-white/20">
-      <SliderPrimitive.Range className="absolute h-full bg-linear-to-r from-blue-500 to-purple-500" />
+    <SliderPrimitive.Track className="relative h-1 w-full grow overflow-hidden rounded-full bg-white/25">
+      <SliderPrimitive.Range className="absolute h-full bg-white" />
     </SliderPrimitive.Track>
 
     <SliderPrimitive.Thumb
       aria-label={thumbLabel}
-      className="block h-4 w-4 rounded-full border-2 border-blue-500 bg-white shadow-lg ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+      className="block size-3 rounded-full bg-white disabled:pointer-events-none disabled:opacity-50"
     />
   </SliderPrimitive.Root>
 ));

@@ -2,291 +2,277 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {
-  ThumbsUp,
-  ThumbsDown,
-  Share2,
-  Bell,
-  ChevronDown,
-  ChevronUp,
-  Eye,
-  Calendar,
-  ListPlus,
-} from "lucide-react";
-import { formatViews, formatTimeAgo } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
+import { usePathname, useRouter } from "next/navigation";
+import { Bell, ListPlus, Share2, ThumbsDown, ThumbsUp } from "lucide-react";
+import { toast } from "sonner";
+
 import { useAuth } from "@/components/auth/AuthProvider";
+import { SaveToPlaylistDialog } from "@/components/library/SaveToPlaylistDialog";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Button } from "@/components/ui/button";
 import reactionApi from "@/lib/api/client/reactionApi";
 import subscriptionApi from "@/lib/api/client/subscriptionApi";
-import { toast } from "sonner";
-import { WatchVideo } from "@/lib/types/videoType";
-import { SaveToPlaylistDialog } from "@/components/library/SaveToPlaylistDialog";
+import type { WatchVideo } from "@/lib/types/videoType";
+import {
+  formatAbsoluteDate,
+  formatCount,
+  formatViews,
+  formatTimeAgo,
+  cn,
+} from "@/lib/utils";
 
-interface VideoInfoProps {
-  video: WatchVideo;
-}
+type Reaction = "like" | "dislike" | null;
 
-export function VideoInfo({ video }: VideoInfoProps) {
+export function VideoInfo({ video }: { video: WatchVideo }) {
   const { user } = useAuth();
-  const [isExpanded, setIsExpanded] = useState(false);
-  // counts and the viewer's own state come with the server-rendered payload (GET /v2/videos/:id)
-  const [isSubscribed, setIsSubscribed] = useState(video.viewer.isSubscribed);
-  const [subscriberCount, setSubscriberCount] = useState(
-    video.owner.subscribersCount
-  );
-  const [likeStatus, setLikeStatus] = useState<"liked" | "disliked" | null>(
-    video.viewer.reaction === "like"
-      ? "liked"
-      : video.viewer.reaction === "dislike"
-        ? "disliked"
-        : null
-  );
-  const [likeCount, setLikeCount] = useState(video.stats.likes);
-  const [isSubLoading, setIsSubLoading] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
 
-  const handleSave = () => {
-    if (!user)
-      return toast.error("Login required", {
-        description: "Please login to save videos",
-      });
-    setIsSaving(true);
+  const [expanded, setExpanded] = useState(false);
+  // counts and the viewer's own state arrive with the server-rendered payload
+  const [subscribed, setSubscribed] = useState(video.viewer.isSubscribed);
+  const [subscribers, setSubscribers] = useState(video.owner.subscribersCount);
+  const [reaction, setReaction] = useState<Reaction>(video.viewer.reaction);
+  const [likes, setLikes] = useState(video.stats.likes);
+  const [saveOpen, setSaveOpen] = useState(false);
+
+  /** Returns false and nudges the visitor when the action needs an account. */
+  const requireAccount = (what: string) => {
+    if (user) return true;
+    toast(`Sign in to ${what}`, {
+      action: {
+        label: "Sign in",
+        onClick: () =>
+          router.push(`/auth/login?redirect=${encodeURIComponent(pathname)}`),
+      },
+    });
+    return false;
   };
 
-  const handleSubscribe = async () => {
-    if (!user)
-      return toast.error("Login required", {
-        description: "Please login to subscribe",
-      });
-    setIsSubLoading(true);
+  // Each action applies at once and rolls back if the request fails: the
+  // change in the UI is the confirmation, so none of them raise a toast.
+  const toggleSubscribe = async () => {
+    if (!requireAccount("subscribe")) return;
+    const next = !subscribed;
+    setSubscribed(next);
+    setSubscribers((count) => count + (next ? 1 : -1));
     try {
-      if (isSubscribed) {
-        await subscriptionApi.unsubscribe(video.owner._id);
-        setIsSubscribed(false);
-        setSubscriberCount((p) => p - 1);
-        toast.success("Unsubscribed");
-      } else {
-        await subscriptionApi.subscribe(video.owner._id);
-        setIsSubscribed(true);
-        setSubscriberCount((p) => p + 1);
-        toast.success("Subscribed!");
+      await (next
+        ? subscriptionApi.subscribe(video.owner._id)
+        : subscriptionApi.unsubscribe(video.owner._id));
+    } catch {
+      setSubscribed(!next);
+      setSubscribers((count) => count + (next ? -1 : 1));
+      toast.error("Couldn't update your subscription. Try again.");
+    }
+  };
+
+  const react = async (next: Exclude<Reaction, null>) => {
+    if (!requireAccount(next === "like" ? "like videos" : "react")) return;
+    const previous = reaction;
+    const previousLikes = likes;
+    const clearing = previous === next;
+
+    setReaction(clearing ? null : next);
+    // a dislike never counted as a like, so the like total only moves when
+    // "like" is on one side of the change
+    setLikes(
+      (count) =>
+        count +
+        (next === "like" ? (clearing ? -1 : 1) : previous === "like" ? -1 : 0)
+    );
+
+    try {
+      await (clearing
+        ? reactionApi.removeReaction(video._id, "Video")
+        : reactionApi.addReaction(video._id, next === "like", "Video"));
+    } catch {
+      setReaction(previous);
+      setLikes(previousLikes);
+      toast.error("Couldn't save your reaction. Try again.");
+    }
+  };
+
+  const share = async () => {
+    const url = window.location.href;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: video.title, url });
+        return;
+      } catch {
+        /* dismissed, or sharing is blocked: fall through to copying */
       }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      toast.success("Link copied");
     } catch {
-      toast.error("Error", { description: "Failed to update subscription" });
-    } finally {
-      setIsSubLoading(false);
+      toast.error("Couldn't copy the link");
     }
   };
 
-  const handleLike = async () => {
-    if (!user)
-      return toast.error("Login required", {
-        description: "Please login to like videos",
-      });
-    try {
-      if (likeStatus === "liked") {
-        await reactionApi.removeReaction(video._id, "Video");
-        setLikeStatus(null);
-        setLikeCount((p) => p - 1);
-      } else {
-        // a dislike never counted as a like, so switching from dislike to like adds exactly one
-        await reactionApi.addReaction(video._id, true, "Video");
-        setLikeStatus("liked");
-        setLikeCount((p) => p + 1);
-      }
-    } catch {
-      toast.error("Error", { description: "Failed to update like" });
-    }
-  };
-
-  const handleDislike = async () => {
-    if (!user)
-      return toast.error("Login required", {
-        description: "Please login to react",
-      });
-    try {
-      if (likeStatus === "disliked") {
-        await reactionApi.removeReaction(video._id, "Video");
-        setLikeStatus(null);
-      } else {
-        await reactionApi.addReaction(video._id, false, "Video");
-        if (likeStatus === "liked") setLikeCount((p) => p - 1);
-        setLikeStatus("disliked");
-      }
-    } catch {
-      toast.error("Error", { description: "Failed to update reaction" });
-    }
-  };
-
-  const handleShare = async () => {
-    try {
-      await navigator.share({ title: video.title, url: window.location.href });
-    } catch {
-      navigator.clipboard.writeText(window.location.href);
-      toast.success("Link copied!");
-    }
-  };
+  const pill =
+    "press flex h-9 items-center gap-2 px-4 text-sm font-medium text-fg";
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-      className="space-y-4"
-    >
-      {/* Title */}
-      <h1 className="text-xl sm:text-2xl font-bold text-white leading-snug">
+    <div className="space-y-4">
+      <h1 className="text-lg leading-7 font-semibold tracking-tight text-fg sm:text-2xl sm:leading-8">
         {video.title}
       </h1>
 
-      {/* Meta row */}
-      <div className="flex items-center gap-3 text-sm text-white/35">
-        <span className="flex items-center gap-1.5">
-          <Eye className="h-3.5 w-3.5" />
-          {formatViews(video.views)} views
-        </span>
-        <span className="w-1 h-1 rounded-full bg-white/20" />
-        <span className="flex items-center gap-1.5">
-          <Calendar className="h-3.5 w-3.5" />
-          {formatTimeAgo(video.createdAt)}
-        </span>
-      </div>
-
-      {/* Channel row + Actions */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-4 border-y border-white/[0.06]">
-        {/* Channel info */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <Link
             href={`/channel/${video.owner.userName}`}
-            className="flex items-center gap-3 group/channel"
+            className="flex items-center gap-3 rounded-sm"
           >
-            <Avatar className="h-11 w-11 ring-2 ring-white/[0.08]">
-              <AvatarImage
-                src={video.owner.avatarUrl}
-                alt={video.owner.userName}
-              />
-              <AvatarFallback className="bg-gradient-to-br from-violet-600 to-cyan-500 text-white font-semibold">
-                {video.owner.userName.charAt(0).toUpperCase()}
-              </AvatarFallback>
+            <Avatar className="size-10">
+              <AvatarImage src={video.owner.avatarUrl} alt="" />
+              <AvatarFallback>{video.owner.userName.charAt(0)}</AvatarFallback>
             </Avatar>
-
-            <div>
-              <p className="font-semibold text-white text-sm group-hover/channel:text-brand-fg transition-colors">
-                {video.owner.userName}
-              </p>
-              <p className="text-xs text-white/35">
-                {formatViews(subscriberCount)} subscribers
-              </p>
-            </div>
+            <span className="block">
+              <span className="block text-sm font-medium text-fg">
+                {video.owner.fullName}
+              </span>
+              <span className="block text-xs text-fg-tertiary tabular-nums">
+                {formatViews(subscribers)} subscribers
+              </span>
+            </span>
           </Link>
 
-          {/* Subscribe button */}
-          <motion.button
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.97 }}
-            onClick={handleSubscribe}
-            disabled={isSubLoading || video.viewer.isOwner}
-            className={`ml-3 flex items-center gap-2 px-5 py-2 rounded-full text-sm font-semibold transition-all duration-200 disabled:opacity-60 ${
-              isSubscribed
-                ? "btn-subscribed"
-                : "btn-subscribe shadow-lg shadow-violet-500/20"
-            }`}
-          >
-            {isSubscribed && <Bell className="h-3.5 w-3.5" />}
-            {isSubscribed ? "Subscribed" : "Subscribe"}
-          </motion.button>
+          {!video.viewer.isOwner && (
+            <Button
+              variant={subscribed ? "secondary" : "inverse"}
+              onClick={toggleSubscribe}
+              aria-pressed={subscribed}
+              className="ml-2 rounded-full"
+            >
+              {subscribed && <Bell strokeWidth={1.75} aria-hidden />}
+              {subscribed ? "Subscribed" : "Subscribe"}
+            </Button>
+          )}
         </div>
 
-        {/* Action buttons */}
-        <div className="flex items-center gap-2">
-          {/* Like/Dislike pill */}
-          <div className="flex items-center rounded-full overflow-hidden bg-white/[0.06] border border-white/[0.08]">
+        {/* a scrolling row rather than a wrapping one, so the player stays put */}
+        <div className="no-scrollbar -mx-4 flex items-center gap-2 overflow-x-auto px-4 sm:mx-0 sm:px-0">
+          <div className="flex shrink-0 items-center overflow-hidden rounded-full border border-line-default bg-elevated">
             <button
-              onClick={handleLike}
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all ${
-                likeStatus === "liked"
-                  ? "text-violet-400 bg-violet-500/15"
-                  : "text-white/60 hover:text-white hover:bg-white/[0.06]"
-              }`}
+              type="button"
+              onClick={() => react("like")}
+              aria-pressed={reaction === "like"}
+              aria-label={`Like${likes > 0 ? `, ${formatCount(likes)} so far` : ""}`}
+              className={cn(pill, "hover:bg-hover")}
             >
               <ThumbsUp
-                className={`h-4 w-4 ${likeStatus === "liked" ? "fill-violet-400" : ""}`}
+                key={`like-${reaction === "like"}`}
+                className={cn(
+                  "size-4",
+                  reaction === "like" &&
+                    "animate-pop fill-current text-brand-fg"
+                )}
+                strokeWidth={1.75}
+                aria-hidden
               />
-              {likeCount > 0 && <span>{formatViews(likeCount)}</span>}
+              <span className="tabular-nums">{formatViews(likes)}</span>
             </button>
-            <div className="w-px h-6 bg-white/10" />
+            <span className="h-6 w-px bg-line-default" aria-hidden />
             <button
-              onClick={handleDislike}
-              className={`flex items-center px-4 py-2 text-sm transition-all ${
-                likeStatus === "disliked"
-                  ? "text-red-400 bg-red-500/15"
-                  : "text-white/60 hover:text-white hover:bg-white/[0.06]"
-              }`}
+              type="button"
+              onClick={() => react("dislike")}
+              aria-pressed={reaction === "dislike"}
+              aria-label="Dislike"
+              className={cn(pill, "hover:bg-hover")}
             >
               <ThumbsDown
-                className={`h-4 w-4 ${likeStatus === "disliked" ? "fill-red-400" : ""}`}
+                key={`dislike-${reaction === "dislike"}`}
+                className={cn(
+                  "size-4",
+                  reaction === "dislike" && "animate-pop fill-current"
+                )}
+                strokeWidth={1.75}
+                aria-hidden
               />
             </button>
           </div>
 
-          {/* Share */}
-          <button
-            onClick={handleShare}
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.06] border border-white/[0.08] text-sm font-medium text-white/60 hover:text-white hover:bg-white/[0.09] transition-all"
+          <Button
+            variant="secondary"
+            onClick={share}
+            className="shrink-0 rounded-full"
           >
-            <Share2 className="h-4 w-4" />
+            <Share2 strokeWidth={1.75} aria-hidden />
             Share
-          </button>
-
-          {/* Save to playlist */}
-          <button
-            onClick={handleSave}
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.06] border border-white/[0.08] text-sm font-medium text-white/60 hover:text-white hover:bg-white/[0.09] transition-all"
+          </Button>
+          <Button
+            variant="secondary"
+            onClick={() => requireAccount("save videos") && setSaveOpen(true)}
+            className="shrink-0 rounded-full"
           >
-            <ListPlus className="h-4 w-4" />
+            <ListPlus strokeWidth={1.75} aria-hidden />
             Save
-          </button>
-          {user && (
+          </Button>
+          {user && saveOpen && (
             <SaveToPlaylistDialog
               videoId={video._id}
-              open={isSaving}
-              onOpenChange={setIsSaving}
+              open={saveOpen}
+              onOpenChange={setSaveOpen}
             />
           )}
         </div>
       </div>
 
-      {/* Description */}
-      {video.description && (
-        <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4">
-          <AnimatePresence initial={false}>
-            <motion.p
-              key={isExpanded ? "expanded" : "collapsed"}
-              className={`text-sm text-white/60 whitespace-pre-wrap leading-relaxed ${!isExpanded ? "line-clamp-3" : ""}`}
-            >
-              {video.description}
-            </motion.p>
-          </AnimatePresence>
+      <Description video={video} expanded={expanded} onExpand={setExpanded} />
+    </div>
+  );
+}
 
-          {video.description.length > 180 && (
-            <button
-              onClick={() => setIsExpanded(!isExpanded)}
-              className="flex items-center gap-1.5 mt-3 text-xs font-semibold text-violet-400 hover:text-violet-300 transition-colors"
-            >
-              {isExpanded ? (
-                <>
-                  <ChevronUp className="h-3.5 w-3.5" /> Show less
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="h-3.5 w-3.5" /> Show more
-                </>
-              )}
-            </button>
-          )}
-        </div>
-      )}
-    </motion.div>
+/** The meta line and description in one box, collapsed to two lines. */
+function Description({
+  video,
+  expanded,
+  onExpand,
+}: {
+  video: WatchVideo;
+  expanded: boolean;
+  onExpand: (expanded: boolean) => void;
+}) {
+  const meta = (
+    <p className="text-sm font-medium text-fg">
+      {formatCount(video.views)} views ·{" "}
+      <time
+        dateTime={video.createdAt}
+        title={formatAbsoluteDate(video.createdAt)}
+      >
+        {formatTimeAgo(video.createdAt)}
+      </time>
+      {video.category && ` · ${video.category}`}
+    </p>
+  );
+
+  if (!video.description) {
+    return <div className="rounded-lg bg-surface p-3">{meta}</div>;
+  }
+
+  return (
+    // the whole box is the target, which is a much bigger hit area than "more"
+    <button
+      type="button"
+      onClick={() => onExpand(!expanded)}
+      aria-expanded={expanded}
+      className="block w-full cursor-pointer rounded-lg bg-surface p-3 text-left transition-colors duration-120 ease-out hover:bg-elevated"
+    >
+      {meta}
+      <p
+        className={cn(
+          "mt-2 text-sm whitespace-pre-wrap text-fg-secondary",
+          !expanded && "line-clamp-2"
+        )}
+      >
+        {video.description}
+      </p>
+      <span className="mt-2 inline-block text-sm font-medium text-fg">
+        {expanded ? "Show less" : "…more"}
+      </span>
+    </button>
   );
 }

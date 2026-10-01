@@ -1,451 +1,459 @@
 "use client";
 
-import { useState, useEffect, useCallback, ChangeEvent, useRef } from "react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ThumbsUp,
-  ThumbsDown,
-  Trash2,
-  Edit2,
-  Send,
   MessageSquare,
+  MoreVertical,
+  Pencil,
+  ThumbsDown,
+  ThumbsUp,
+  Trash2,
 } from "lucide-react";
-import { formatTimeAgo, formatViews } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
+
 import { useAuth } from "@/components/auth/AuthProvider";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ConfirmDialog } from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { EmptyState } from "@/components/ui/empty-state";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import commentApi from "@/lib/api/client/commentApi";
 import reactionApi from "@/lib/api/client/reactionApi";
-import { Comment } from "@/lib/types/commentType";
-import { unwrapApiResponse } from "@/lib/unwrapApiRes";
-import { Page } from "@/lib/types/apiType";
 import { getApiErrorMessage } from "@/lib/apiErrorMessage";
-import { toast } from "sonner";
+import type { Comment } from "@/lib/types/commentType";
+import type { Page } from "@/lib/types/apiType";
+import { unwrapApiResponse } from "@/lib/unwrapApiRes";
+import { cn, formatTimeAgo, formatViews, plural } from "@/lib/utils";
 
 export function CommentSection({
   targetId,
   targetType,
   isContentOwner = false,
+  /** The id of whoever owns the video or post, for the "Creator" badge. */
+  contentOwnerId,
+  /** The server's count, so the heading is right before the list loads. */
+  totalComments,
 }: {
   targetId: string;
   targetType: "Video" | "Tweet";
   isContentOwner?: boolean;
+  contentOwnerId?: string;
+  totalComments?: number;
 }) {
   const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
-  const [newComment, setNewComment] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editContent, setEditContent] = useState("");
-  const [isFocused, setIsFocused] = useState(false);
   const [cursor, setCursor] = useState<string | null>(null);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [count, setCount] = useState(totalComments ?? 0);
 
-  // (re)loads the first page, newest first; counts and the viewer's own reaction come with each comment
-  const fetchComments = useCallback(async () => {
-    setIsLoading(true);
+  const [draft, setDraft] = useState("");
+  const [composerOpen, setComposerOpen] = useState(false);
+  const [posting, setPosting] = useState(false);
+
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editDraft, setEditDraft] = useState("");
+  const [pendingDelete, setPendingDelete] = useState<Comment | null>(null);
+  const [deleting, setDeleting] = useState(false);
+
+  const composer = useRef<HTMLTextAreaElement>(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
     try {
-      const response = await commentApi.all(targetId, targetType);
-      const page = unwrapApiResponse<Page<Comment>>(response.data);
+      const page = unwrapApiResponse<Page<Comment>>(
+        (await commentApi.all(targetId, targetType)).data
+      );
       setComments(page.items);
       setCursor(page.nextCursor);
     } catch (error: unknown) {
-      toast.error("Error", {
-        description: getApiErrorMessage(error, "Failed to load comments"),
+      toast.error("Couldn't load the comments", {
+        description: getApiErrorMessage(error),
       });
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   }, [targetId, targetType]);
 
-  const loadMoreComments = async () => {
-    if (!cursor || isLoadingMore) return;
-    setIsLoadingMore(true);
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const loadMore = async () => {
+    if (!cursor || loadingMore) return;
+    setLoadingMore(true);
     try {
-      const response = await commentApi.all(targetId, targetType, cursor);
-      const page = unwrapApiResponse<Page<Comment>>(response.data);
+      const page = unwrapApiResponse<Page<Comment>>(
+        (await commentApi.all(targetId, targetType, cursor)).data
+      );
       setComments((current) => [...current, ...page.items]);
       setCursor(page.nextCursor);
     } catch (error: unknown) {
-      toast.error("Error", {
-        description: getApiErrorMessage(error, "Failed to load more comments"),
+      toast.error("Couldn't load more comments", {
+        description: getApiErrorMessage(error),
       });
     } finally {
-      setIsLoadingMore(false);
+      setLoadingMore(false);
     }
   };
 
-  useEffect(() => {
-    fetchComments();
-  }, [fetchComments]);
-
-  const handleSubmitComment = async () => {
-    if (!user)
-      return toast.error("Login required", {
-        description: "Please login to comment",
-      });
-    if (!newComment.trim()) return;
-    setIsSubmitting(true);
-    try {
-      await commentApi.post(targetId, newComment, targetType);
-      setNewComment("");
-      setIsFocused(false);
-      await fetchComments();
-      toast.success("Comment posted!");
-    } catch {
-      toast.error("Error", { description: "Failed to post comment" });
-    } finally {
-      setIsSubmitting(false);
-    }
+  const closeComposer = () => {
+    setDraft("");
+    setComposerOpen(false);
   };
 
-  const handleDeleteComment = async (commentId: string) => {
+  const post = async () => {
+    const content = draft.trim();
+    if (!content || !user) return;
+    setPosting(true);
     try {
-      await commentApi.delete(commentId);
-      setComments((current) => current.filter((c) => c._id !== commentId));
-      toast.success("Comment deleted");
-    } catch (error: unknown) {
-      toast.error("Error", {
-        description: getApiErrorMessage(error, "Failed to delete comment"),
-      });
-    }
-  };
-
-  const handleEditComment = async (commentId: string) => {
-    if (!editContent.trim()) return;
-    try {
-      await commentApi.edit(commentId, editContent);
-      setComments((current) =>
-        current.map((c) =>
-          c._id === commentId
-            ? { ...c, content: editContent.trim(), editStatus: true }
-            : c
-        )
+      // the new comment is prepended from the response, so the rest of the
+      // list keeps its place instead of being refetched
+      const created = unwrapApiResponse<Comment>(
+        (await commentApi.post(targetId, content, targetType)).data
       );
-      setEditingId(null);
-      setEditContent("");
-      toast.success("Comment updated");
+      setComments((current) => [created, ...current]);
+      setCount((n) => n + 1);
+      closeComposer();
     } catch (error: unknown) {
-      toast.error("Error", {
-        description: getApiErrorMessage(error, "Failed to update comment"),
+      toast.error("Couldn't post your comment", {
+        description: getApiErrorMessage(error),
+      });
+    } finally {
+      setPosting(false);
+    }
+  };
+
+  const saveEdit = async (commentId: string) => {
+    const content = editDraft.trim();
+    if (!content) return;
+    const before = comments;
+    setComments((current) =>
+      current.map((c) =>
+        c._id === commentId ? { ...c, content, editStatus: true } : c
+      )
+    );
+    setEditingId(null);
+    try {
+      await commentApi.edit(commentId, content);
+    } catch (error: unknown) {
+      setComments(before);
+      toast.error("Couldn't save your edit", {
+        description: getApiErrorMessage(error),
       });
     }
   };
 
-  // optimistic: update counts locally, roll back if the request fails
-  const handleCommentReaction = async (
-    comment: Comment,
-    value: "like" | "dislike"
-  ) => {
-    if (!user)
-      return toast.error("Login required", {
-        description: "Please login to react",
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    setDeleting(true);
+    try {
+      await commentApi.delete(pendingDelete._id);
+      setComments((current) =>
+        current.filter((c) => c._id !== pendingDelete._id)
+      );
+      setCount((n) => Math.max(0, n - 1));
+      setPendingDelete(null);
+    } catch (error: unknown) {
+      toast.error("Couldn't delete the comment", {
+        description: getApiErrorMessage(error),
       });
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  // optimistic: move the counts locally, roll back if the request fails
+  const react = async (comment: Comment, value: "like" | "dislike") => {
+    if (!user) {
+      toast("Sign in to react to comments");
+      return;
+    }
     const next = comment.viewerReaction === value ? null : value;
-    const withReaction = (
-      c: Comment,
-      reaction: Comment["viewerReaction"]
-    ): Comment => ({
-      ...c,
-      viewerReaction: reaction,
+    const updated: Comment = {
+      ...comment,
+      viewerReaction: next,
       likeCount:
-        c.likeCount -
-        (c.viewerReaction === "like" ? 1 : 0) +
-        (reaction === "like" ? 1 : 0),
+        comment.likeCount -
+        (comment.viewerReaction === "like" ? 1 : 0) +
+        (next === "like" ? 1 : 0),
       dislikeCount:
-        c.dislikeCount -
-        (c.viewerReaction === "dislike" ? 1 : 0) +
-        (reaction === "dislike" ? 1 : 0),
-    });
+        comment.dislikeCount -
+        (comment.viewerReaction === "dislike" ? 1 : 0) +
+        (next === "dislike" ? 1 : 0),
+    };
     setComments((current) =>
-      current.map((c) => (c._id === comment._id ? withReaction(c, next) : c))
+      current.map((c) => (c._id === comment._id ? updated : c))
     );
     try {
-      if (next === null)
-        await reactionApi.removeReaction(comment._id, "Comment");
-      else
-        await reactionApi.addReaction(comment._id, next === "like", "Comment");
+      await (next === null
+        ? reactionApi.removeReaction(comment._id, "Comment")
+        : reactionApi.addReaction(comment._id, next === "like", "Comment"));
     } catch {
       setComments((current) =>
         current.map((c) => (c._id === comment._id ? comment : c))
       );
-      toast.error("Error", { description: "Failed to update reaction" });
+      toast.error("Couldn't save your reaction. Try again.");
     }
   };
 
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: 0.1 }}
-      className="space-y-6"
-    >
-      {/* Header */}
-      <div className="flex items-center gap-3">
-        <MessageSquare className="h-5 w-5 text-violet-400" strokeWidth={1.75} />
-        <h2 className="text-lg font-bold text-white">
-          {/* the total is unknown until the last page is loaded */}
-          {comments.length > 0
-            ? `${comments.length}${cursor ? "+" : ""} ${comments.length === 1 && !cursor ? "Comment" : "Comments"}`
-            : "Comments"}
-        </h2>
-      </div>
+  const heading = count > 0 ? plural(count, "comment") : "Comments";
 
-      {/* Add comment box */}
+  return (
+    <section aria-labelledby="comments" className="space-y-5">
+      <h2
+        id="comments"
+        className="text-base font-semibold tracking-tight text-fg"
+      >
+        {heading}
+      </h2>
+
       <div className="flex gap-3">
-        <Avatar className="h-9 w-9 ring-1 ring-white/[0.08] flex-shrink-0 mt-0.5">
-          <AvatarImage src={user?.avatarUrl} alt={user?.userName || "Guest"} />
-          <AvatarFallback className="bg-gradient-to-br from-violet-600 to-cyan-500 text-white text-sm font-semibold">
-            {user ? user.userName.charAt(0).toUpperCase() : "G"}
+        <Avatar className="mt-0.5 size-9 shrink-0">
+          <AvatarImage src={user?.avatarUrl} alt="" />
+          <AvatarFallback>
+            {user ? user.userName.charAt(0) : "?"}
           </AvatarFallback>
         </Avatar>
-
-        <div className="flex-1 space-y-3">
-          <div
-            className={`relative rounded-xl border transition-all duration-200 ${
-              isFocused
-                ? "border-violet-500/50 shadow-lg shadow-violet-500/10 bg-white/[0.05]"
-                : "border-white/[0.07] bg-white/[0.03]"
-            }`}
-          >
-            <Textarea
-              ref={textareaRef}
-              value={newComment}
-              onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
-                setNewComment(e.target.value)
-              }
-              placeholder={
-                user ? "Add a comment..." : "Login to join the conversation"
-              }
-              disabled={!user}
-              onFocus={() => setIsFocused(true)}
-              onBlur={() => !newComment && setIsFocused(false)}
-              className="bg-transparent border-0 focus-visible:ring-0 resize-none min-h-[80px] text-sm text-white/80 placeholder:text-white/25 disabled:cursor-not-allowed disabled:opacity-50"
-            />
-          </div>
-
-          <AnimatePresence>
-            {(isFocused || newComment) && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: "auto" }}
-                exit={{ opacity: 0, height: 0 }}
-                className="flex justify-end gap-2 overflow-hidden"
+        <div className="min-w-0 flex-1">
+          <Textarea
+            ref={composer}
+            rows={1}
+            value={draft}
+            disabled={!user}
+            onChange={(event) => setDraft(event.target.value)}
+            onFocus={() => setComposerOpen(true)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && (event.metaKey || event.ctrlKey))
+                post();
+            }}
+            placeholder={user ? "Add a comment" : "Sign in to comment"}
+            aria-label="Add a comment"
+            className="min-h-10 resize-none"
+          />
+          {composerOpen && (
+            <div className="mt-2 flex items-center justify-end gap-2">
+              <span className="mr-auto hidden text-xs text-fg-tertiary sm:block">
+                Ctrl + Enter to post
+              </span>
+              <Button variant="ghost" size="sm" onClick={closeComposer}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={post}
+                loading={posting}
+                disabled={!draft.trim()}
+                className="rounded-full px-5"
               >
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setNewComment("");
-                    setIsFocused(false);
-                  }}
-                  className="text-white/40 hover:text-white rounded-full text-xs"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  size="sm"
-                  onClick={handleSubmitComment}
-                  disabled={!user || !newComment.trim() || isSubmitting}
-                  className="flex items-center gap-2 rounded-full px-5 bg-gradient-to-r from-violet-600 to-cyan-500 text-white text-xs font-semibold hover:opacity-90 border-0 disabled:opacity-40 shadow-md shadow-violet-500/20"
-                >
-                  {isSubmitting ? (
-                    <div className="w-4 h-4 rounded-full border-2 border-white/40 border-t-white animate-spin" />
-                  ) : (
-                    <Send className="h-3.5 w-3.5" />
-                  )}
-                  {isSubmitting ? "Posting..." : "Comment"}
-                </Button>
-              </motion.div>
-            )}
-          </AnimatePresence>
+                Comment
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Separator */}
-      <div className="h-px bg-white/[0.06]" />
-
-      {/* Comment list */}
-      <div className="space-y-5">
-        {isLoading ? (
-          <div className="space-y-5">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex gap-3">
-                <div className="h-9 w-9 rounded-full shimmer-container flex-shrink-0" />
-                <div className="flex-1 space-y-2">
-                  <div className="h-3.5 shimmer-container rounded-md w-36" />
-                  <div className="h-3 shimmer-container rounded-md w-full" />
-                  <div className="h-3 shimmer-container rounded-md w-2/3" />
-                </div>
+      {loading ? (
+        <ul className="space-y-5">
+          {Array.from({ length: 4 }, (_, index) => (
+            <li key={index} className="flex gap-3">
+              <Skeleton className="size-9 shrink-0 rounded-full" />
+              <div className="flex-1 space-y-2">
+                <Skeleton className="h-3.5 w-36" />
+                <Skeleton className="h-3 w-full" />
+                <Skeleton className="h-3 w-2/3" />
               </div>
-            ))}
-          </div>
-        ) : comments.length === 0 ? (
-          <div className="py-12 text-center">
-            <MessageSquare
-              className="h-10 w-10 text-white/10 mx-auto mb-3"
-              strokeWidth={1}
-            />
-            <p className="text-sm text-white/30">
-              No comments yet — be the first!
-            </p>
-          </div>
-        ) : (
-          <AnimatePresence>
-            {comments.map((comment, index) => {
-              const commenterName = comment.author?.userName ?? "Unknown";
-              const commenterAvatar = comment.author?.avatarUrl ?? "";
-              const commenterTime =
-                comment.relativeTime ?? formatTimeAgo(comment.createdAt);
-              const isAuthor = Boolean(user && user._id === comment.userId);
-              // the owner of the video / post may remove any comment on it
-              const canDelete = isAuthor || isContentOwner;
-              const isLiked = comment.viewerReaction === "like";
-              const isDisliked = comment.viewerReaction === "dislike";
+            </li>
+          ))}
+        </ul>
+      ) : comments.length === 0 ? (
+        <EmptyState
+          icon={MessageSquare}
+          title="No comments yet"
+          description="Be the first to say something."
+          className="py-10"
+        />
+      ) : (
+        <ul className="space-y-5">
+          {comments.map((comment) => {
+            const name = comment.author?.userName ?? "Unknown";
+            const isAuthor = Boolean(user && user._id === comment.userId);
+            // whoever owns the video or post may remove any comment on it
+            const canDelete = isAuthor || isContentOwner;
+            const isCreator =
+              contentOwnerId != null && comment.userId === contentOwnerId;
+            const liked = comment.viewerReaction === "like";
+            const disliked = comment.viewerReaction === "dislike";
 
-              return (
-                <motion.div
-                  key={comment._id}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ delay: index * 0.04 }}
-                  className="flex gap-3 group"
-                >
-                  <Avatar className="h-9 w-9 flex-shrink-0 ring-1 ring-white/[0.06]">
-                    <AvatarImage src={commenterAvatar} alt={commenterName} />
-                    <AvatarFallback className="bg-gradient-to-br from-violet-700 to-cyan-600 text-white text-xs font-semibold">
-                      {commenterName.charAt(0).toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+            return (
+              <li key={comment._id} className="flex gap-3">
+                <Avatar className="size-9 shrink-0">
+                  <AvatarImage src={comment.author?.avatarUrl} alt="" />
+                  <AvatarFallback>{name.charAt(0)}</AvatarFallback>
+                </Avatar>
 
-                  <div className="flex-1 min-w-0">
-                    {/* Name + time */}
-                    <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-                      <span className="text-sm font-semibold text-white/90">
-                        {commenterName}
-                      </span>
-                      <span className="text-xs text-white/25">
-                        {commenterTime}
-                      </span>
-                    </div>
-
-                    {/* Content or edit mode */}
-                    {editingId === comment._id ? (
-                      <div className="space-y-2">
-                        <Textarea
-                          value={editContent}
-                          onChange={(e: ChangeEvent<HTMLTextAreaElement>) =>
-                            setEditContent(e.target.value)
-                          }
-                          className="bg-white/[0.05] border-white/[0.08] focus-visible:ring-violet-500/40 resize-none text-sm text-white/80 rounded-xl"
-                        />
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => {
-                              setEditingId(null);
-                              setEditContent("");
-                            }}
-                            className="text-white/40 hover:text-white rounded-full text-xs"
-                          >
-                            Cancel
-                          </Button>
-                          <Button
-                            size="sm"
-                            onClick={() => handleEditComment(comment._id)}
-                            className="bg-violet-600 hover:bg-violet-500 text-white rounded-full text-xs px-4"
-                          >
-                            Save
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-white/65 leading-relaxed">
-                        {comment.content}
-                      </p>
-                    )}
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-1 mt-2.5">
-                      <button
-                        onClick={() => handleCommentReaction(comment, "like")}
-                        aria-pressed={isLiked}
-                        className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium transition-all ${
-                          isLiked
-                            ? "text-violet-400 bg-violet-500/15"
-                            : "text-white/35 hover:text-white/70 hover:bg-white/[0.06]"
-                        }`}
-                      >
-                        <ThumbsUp
-                          className={`h-3.5 w-3.5 ${isLiked ? "fill-violet-400" : ""}`}
-                        />
-                        {comment.likeCount > 0 &&
-                          formatViews(comment.likeCount)}
-                      </button>
-
-                      <button
-                        onClick={() =>
-                          handleCommentReaction(comment, "dislike")
-                        }
-                        aria-pressed={isDisliked}
-                        className={`flex items-center px-2.5 py-1 rounded-full text-xs transition-all ${
-                          isDisliked
-                            ? "text-red-400 bg-red-500/15"
-                            : "text-white/35 hover:text-white/70 hover:bg-white/[0.06]"
-                        }`}
-                      >
-                        <ThumbsDown
-                          className={`h-3.5 w-3.5 ${isDisliked ? "fill-red-400" : ""}`}
-                        />
-                      </button>
-
-                      {/* Owner controls */}
-                      {canDelete && (
-                        <div className="flex items-center gap-1 ml-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
-                          {isAuthor && (
-                            <button
-                              onClick={() => {
-                                setEditingId(comment._id);
-                                setEditContent(comment.content);
-                              }}
-                              aria-label="Edit comment"
-                              className="p-1.5 rounded-full text-white/25 hover:text-white/70 hover:bg-white/[0.06] transition-all"
-                            >
-                              <Edit2 className="h-3 w-3" />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => handleDeleteComment(comment._id)}
-                            aria-label="Delete comment"
-                            className="p-1.5 rounded-full text-white/25 hover:text-red-400 hover:bg-red-500/[0.08] transition-all"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                    <span className="text-sm font-medium text-fg">@{name}</span>
+                    {isCreator && <Badge tone="brand">Creator</Badge>}
+                    <span className="text-xs text-fg-tertiary">
+                      {comment.relativeTime ?? formatTimeAgo(comment.createdAt)}
+                      {comment.editStatus && " (edited)"}
+                    </span>
                   </div>
-                </motion.div>
-              );
-            })}
-          </AnimatePresence>
-        )}
-      </div>
 
-      {!isLoading && cursor && (
-        <button
-          onClick={loadMoreComments}
-          disabled={isLoadingMore}
-          className="text-sm font-semibold text-violet-400 hover:text-violet-300 transition-colors disabled:opacity-60"
-        >
-          {isLoadingMore ? "Loading..." : "Show more comments"}
-        </button>
+                  {editingId === comment._id ? (
+                    <div className="mt-2 space-y-2">
+                      <Textarea
+                        value={editDraft}
+                        autoFocus
+                        aria-label="Edit your comment"
+                        onChange={(event) => setEditDraft(event.target.value)}
+                        className="resize-none"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingId(null)}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => saveEdit(comment._id)}
+                          disabled={!editDraft.trim()}
+                          className="rounded-full px-4"
+                        >
+                          Save
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="mt-1 text-sm whitespace-pre-wrap text-fg-secondary">
+                      {comment.content}
+                    </p>
+                  )}
+
+                  <div className="mt-1.5 flex items-center gap-1">
+                    <ReactionButton
+                      pressed={liked}
+                      label="Like"
+                      count={comment.likeCount}
+                      onClick={() => react(comment, "like")}
+                      icon={ThumbsUp}
+                    />
+                    <ReactionButton
+                      pressed={disliked}
+                      label="Dislike"
+                      onClick={() => react(comment, "dislike")}
+                      icon={ThumbsDown}
+                    />
+
+                    {canDelete && (
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <button
+                            type="button"
+                            aria-label={`More actions for the comment by ${name}`}
+                            className="press inline-flex size-9 items-center justify-center rounded-full text-fg-tertiary hover:bg-hover hover:text-fg"
+                          >
+                            <MoreVertical
+                              className="size-4"
+                              strokeWidth={1.75}
+                              aria-hidden
+                            />
+                          </button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="start">
+                          {isAuthor && (
+                            <DropdownMenuItem
+                              onSelect={() => {
+                                setEditingId(comment._id);
+                                setEditDraft(comment.content);
+                              }}
+                            >
+                              <Pencil aria-hidden />
+                              Edit
+                            </DropdownMenuItem>
+                          )}
+                          <DropdownMenuItem
+                            variant="destructive"
+                            onSelect={() => setPendingDelete(comment)}
+                          >
+                            <Trash2 aria-hidden />
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    )}
+                  </div>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       )}
-    </motion.div>
+
+      {!loading && cursor && (
+        <Button variant="ghost" onClick={loadMore} loading={loadingMore}>
+          Show more comments
+        </Button>
+      )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        onOpenChange={(open) => !open && setPendingDelete(null)}
+        title="Delete comment?"
+        description="This removes the comment for everyone. It can't be undone."
+        busy={deleting}
+        onConfirm={confirmDelete}
+      />
+    </section>
+  );
+}
+
+function ReactionButton({
+  pressed,
+  label,
+  count,
+  onClick,
+  icon: Icon,
+}: {
+  pressed: boolean;
+  label: string;
+  count?: number;
+  onClick: () => void;
+  icon: typeof ThumbsUp;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={pressed}
+      aria-label={label}
+      className={cn(
+        "press inline-flex h-9 items-center gap-1.5 rounded-full px-2.5 text-xs font-medium hover:bg-hover",
+        pressed ? "text-brand-fg" : "text-fg-secondary hover:text-fg"
+      )}
+    >
+      <Icon
+        key={String(pressed)}
+        className={cn("size-4", pressed && "animate-pop fill-current")}
+        strokeWidth={1.75}
+        aria-hidden
+      />
+      {count != null && count > 0 && (
+        <span className="tabular-nums">{formatViews(count)}</span>
+      )}
+    </button>
   );
 }
