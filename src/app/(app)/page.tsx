@@ -64,6 +64,9 @@ export default async function HomePage({
       </div>
 
       <div className="px-4 pb-12 md:px-6 xl:px-8">
+        {/* a feed needs no visible title, but the page still needs one h1 */}
+        <h1 className="sr-only">Home</h1>
+
         {/* a category filters the whole feed, so the shelf would contradict it */}
         {!category && (
           <VideoShelf

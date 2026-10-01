@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { useId, useState } from "react";
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useNav } from "@/components/layout/NavProvider";
@@ -60,9 +60,20 @@ function Divider() {
   return <hr className="my-3 border-0 border-t border-line" />;
 }
 
-function GroupLabel({ children }: { children: React.ReactNode }) {
+// Not a heading: the sidebar sits before the page's own h1 in the document, so
+// an h2 here would outrank it in every outline. The list below points back at
+// the label instead, which gives the same grouping without the ranking.
+function GroupLabel({
+  id,
+  children,
+}: {
+  id: string;
+  children: React.ReactNode;
+}) {
   return (
-    <h2 className="px-3 pb-1 text-base font-semibold text-fg">{children}</h2>
+    <p id={id} className="px-3 pb-1 text-base font-semibold text-fg">
+      {children}
+    </p>
   );
 }
 
@@ -75,6 +86,8 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   const { user } = useAuth();
   const { channels } = useNav();
   const [showAllChannels, setShowAllChannels] = useState(false);
+  // the sidebar and the drawer can both be in the DOM, so the ids differ
+  const labelId = useId();
 
   const visible = (items: NavItem[]) =>
     items.filter((item) => user || !item.private);
@@ -100,16 +113,16 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
       {user && (
         <>
           <Divider />
-          <GroupLabel>You</GroupLabel>
-          <ul>{group(YOU_NAV)}</ul>
+          <GroupLabel id={`${labelId}-you`}>You</GroupLabel>
+          <ul aria-labelledby={`${labelId}-you`}>{group(YOU_NAV)}</ul>
         </>
       )}
 
       {channels.length > 0 && (
         <>
           <Divider />
-          <GroupLabel>Subscriptions</GroupLabel>
-          <ul>
+          <GroupLabel id={`${labelId}-subs`}>Subscriptions</GroupLabel>
+          <ul aria-labelledby={`${labelId}-subs`}>
             {shown.map(({ channel }) => (
               <li key={channel._id}>
                 <Link
