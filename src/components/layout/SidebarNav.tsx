@@ -119,7 +119,7 @@ export function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
                 >
                   <Avatar className="size-6">
                     <AvatarImage src={channel.avatarUrl} alt="" />
-                    <AvatarFallback className="text-[10px]">
+                    <AvatarFallback className="text-[0.625rem]">
                       {channel.userName.charAt(0)}
                     </AvatarFallback>
                   </Avatar>

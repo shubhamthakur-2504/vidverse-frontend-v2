@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
-import { fieldInput, fieldLabel } from "@/components/studio/styles";
+import { Input } from "@/components/ui/input";
 
 // rough strength from length and character variety; a hint for the user, not a rule (the API only needs 8+)
 export function passwordStrength(password: string): {
@@ -27,7 +27,7 @@ const BAR_COLOURS = [
 ] as const;
 
 export function PasswordField({
-  id,
+  id: idProp,
   label,
   value,
   onChange,
@@ -36,7 +36,7 @@ export function PasswordField({
   labelAction,
   autoFocus,
 }: {
-  id: string;
+  id?: string;
   label: string;
   value: string;
   onChange: (value: string) => void;
@@ -46,38 +46,40 @@ export function PasswordField({
   labelAction?: React.ReactNode;
   autoFocus?: boolean;
 }) {
+  const fallbackId = useId();
+  const id = idProp ?? fallbackId;
   const [visible, setVisible] = useState(false);
   const strength = passwordStrength(value);
 
   return (
     <div>
-      <div className="flex items-baseline justify-between">
-        <label htmlFor={id} className={fieldLabel}>
+      <div className="mb-1.5 flex items-baseline justify-between">
+        <label htmlFor={id} className="text-sm font-medium text-fg-secondary">
           {label}
         </label>
         {labelAction}
       </div>
       <div className="relative">
-        <input
+        <Input
           id={id}
           type={visible ? "text" : "password"}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           autoComplete={autoComplete}
           autoFocus={autoFocus}
-          className={`${fieldInput} h-10 pr-10`}
+          className="pr-10"
           aria-describedby={showStrength ? `${id}-strength` : undefined}
         />
         <button
           type="button"
           onClick={() => setVisible((v) => !v)}
           aria-label={visible ? "Hide password" : "Show password"}
-          className="absolute right-2 top-1/2 -translate-y-1/2 rounded p-1 text-fg-tertiary hover:text-fg"
+          className="press absolute top-1 right-1 inline-flex size-8 items-center justify-center rounded-full text-fg-tertiary hover:bg-hover hover:text-fg"
         >
           {visible ? (
-            <EyeOff className="h-4 w-4" aria-hidden />
+            <EyeOff className="size-4" strokeWidth={1.75} aria-hidden />
           ) : (
-            <Eye className="h-4 w-4" aria-hidden />
+            <Eye className="size-4" strokeWidth={1.75} aria-hidden />
           )}
         </button>
       </div>
